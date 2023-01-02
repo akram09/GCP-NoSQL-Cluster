@@ -4,7 +4,7 @@ from google.cloud import compute_v1
 import re
 from typing import List
 import warnings
-from utils.core import wait_for_extended_operation
+from utils.gcp import wait_for_extended_operation
 
 def create_instance(
     project_id: str,

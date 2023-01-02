@@ -1,5 +1,5 @@
 from google.cloud import compute_v1
-from utils.core import wait_for_extended_operation
+from utils.gcp import wait_for_extended_operation
 
 
 def create_template(project_id: str, template_name: str) -> compute_v1.InstanceTemplate:
