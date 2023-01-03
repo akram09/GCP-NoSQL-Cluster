@@ -2,3 +2,4 @@ service.json
 venv/
 __pycache__/
 .env
+template.yaml
