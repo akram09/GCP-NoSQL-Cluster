@@ -47,6 +47,10 @@ def create_template(
 
     template = compute_v1.InstanceTemplate()
     template.name = template_name
+    # create instance tags 
+    tags = compute_v1.Tags()
+    tags.items = ["couchbase-server"]
+    template.properties.tags = tags 
     template.properties.disks = [disk]
     template.properties.machine_type = machine_type
     template.properties.network_interfaces = [network_interface]
