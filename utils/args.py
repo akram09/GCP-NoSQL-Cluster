@@ -1,14 +1,17 @@
 import argparse
 from utils.gcp import get_image_from_family
 from lib.template import create_template
+import yaml
 
 # Parse cluster definition arguments 
 def parse_cluster_args():
     parser = argparse.ArgumentParser(description='Couchbase cluster setup over GCP')
-
-    parser.add_argument('--cluster-name', dest='cluster_name', required=True, help='Name of the cluster')
+    # yaml file
+    parser.add_argument('--yaml-file', dest='yaml_file', help='name of the yaml file with cluster definition')
+    # cluster name
+    parser.add_argument('--cluster-name', dest='cluster_name', help='Name of the cluster')
     # cluster size 
-    parser.add_argument('--cluster-size', dest='cluster_size', required=True, help='Number of nodes in the cluster')
+    parser.add_argument('--cluster-size', dest='cluster_size', help='Number of nodes in the cluster')
     # machine type with default value 
     parser.add_argument('--machine-type', dest='machine_type', default='e2-micro', help='Machine type for the cluster')
     # disk size with default value
@@ -49,5 +52,50 @@ def create_template_from_args(
     return template
 
     
+# function that creates template from yaml file instead of args
+def create_template_from_yaml(
+    project_id: str,
+    zone:str,
+    template_name: str,
+    yaml_file: str
+    ):
+    
+    # read the yaml file
+    with open(yaml_file, 'r') as stream:
+        try:
+            data = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+    # verify if the yaml file has attributes: cluster_name, cluster_size, image_project, image_family, machine_type, disk_type, disk_size
+    if data['cluster_name'] == None:
+       raise Exception("cluster_name is not defined in the yaml file")
+    if data['cluster_size'] == None:
+     raise Exception("cluster_size is not defined in the yaml file")
+    if data['image_project'] == None:
+        raise Exception("image_project is not defined in the yaml file")
+    if data['image_family'] == None:
+        raise Exception("image_family is not defined in the yaml file")
+    if data['machine_type'] == None:
+        raise Exception("machine_type is not defined in the yaml file")
+    if data['disk_type'] == None:
+        raise Exception("disk_type is not defined in the yaml file")
+    if data['disk_size'] == None:
+        raise Exception("disk_size is not defined in the yaml file")
 
 
+    #Get the machine image from the project and family
+    machine_image = get_image_from_family(
+        project=data['image_project'], family=data['image_family']
+    )
+
+    template = create_template(
+        project_id,
+        zone,
+        template_name,
+        data['machine_type'],
+        machine_image,
+        data['disk_type'],
+        data['disk_size']
+    )
+    
+    return template 
