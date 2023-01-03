@@ -1,5 +1,6 @@
 import argparse
-
+from utils.gcp import get_image_from_family
+from lib.template import create_template
 
 # Parse cluster definition arguments 
 def parse_cluster_args():
@@ -14,12 +15,38 @@ def parse_cluster_args():
     parser.add_argument('--disk-size', dest='disk_size', default='10', help='Disk size for the cluster')
     # disk type with default value
     parser.add_argument('--disk-type', dest='disk_type', default='pd-standard', help='Disk type for the cluster')
-    # machine image with default value 
-    parser.add_argument('--machine-image', dest='machine_image', default='projects/debian-cloud/global/images/family/debian-11', help='Machine image for the cluster')
+    # machine image project with default value 
+    parser.add_argument('--image-project', dest='image_project', default='debian-cloud', help='Machine image project for the cluster')
+    # machine image family with default value 
+    parser.add_argument('--image-family', dest='image_family', default='debian-11', help='Machine image family project for the cluster')
     # cloud storage bucket
     parser.add_argument('--bucket', dest='bucket', help='Cloud storage bucket to store the cluster init scripts')
 
     return parser.parse_args()
+
+def create_template_from_args(
+    project_id: str,
+    zone:str,
+    template_name: str,
+    args: argparse.Namespace
+    ):
+    
+    #Get the machine image from the project and family
+    machine_image = get_image_from_family(
+        project=args.image_project, family=args.image_family
+    )
+
+    template = create_template(
+        project_id,
+        zone,
+        template_name,
+        args.machine_type,
+        machine_image,
+        args.disk_type,
+        args.disk_size
+    )
+    
+    return template
 
     
 

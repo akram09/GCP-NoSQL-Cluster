@@ -1,8 +1,17 @@
 from google.cloud import compute_v1
-from utils.gcp import wait_for_extended_operation
+from utils.gcp import wait_for_extended_operation, disk_from_image
+from typing import Iterable
 
-
-def create_template(project_id: str, template_name: str) -> compute_v1.InstanceTemplate:
+def create_template(
+    project_id: str,
+    zone: str,
+    template_name: str,
+    machine_type: str,
+    machine_image: compute_v1.types.compute.Image,
+    disk_type: str,
+    disk_size: int,
+    disk_boot_auto: bool = True
+    ):
     """
     Create a new instance template with the provided name and a specific
     instance configuration.
@@ -12,17 +21,17 @@ def create_template(project_id: str, template_name: str) -> compute_v1.InstanceT
     Returns:
         InstanceTemplate object that represents the new instance template.
     """
-    # The template describes the size and source image of the boot disk
-    # to attach to the instance.
-    disk = compute_v1.AttachedDisk()
-    initialize_params = compute_v1.AttachedDiskInitializeParams()
-    initialize_params.source_image = (
-        "projects/debian-cloud/global/images/family/debian-11"
-    )
-    initialize_params.disk_size_gb = 250
-    disk.initialize_params = initialize_params
-    disk.auto_delete = True
-    disk.boot = True
+    # get disk from image
+    #disk_type_name = f"zones/{zone}/diskTypes/{disk_type}"
+    disk = disk_from_image(disk_type, disk_size, disk_boot_auto, machine_image.self_link)
+    # initialize_params = compute_v1.AttachedDiskInitializeParams()
+    # initialize_params.source_image = (
+    #     machine_image
+    # )
+    # initialize_params.disk_size_gb = 250
+    # disk.initialize_params = initialize_params
+    # disk.auto_delete = True
+    # disk.boot = True
 
     # The template connects the instance to the `default` network,
     # without specifying a subnetwork.
@@ -39,7 +48,7 @@ def create_template(project_id: str, template_name: str) -> compute_v1.InstanceT
     template = compute_v1.InstanceTemplate()
     template.name = template_name
     template.properties.disks = [disk]
-    template.properties.machine_type = "e2-standard-4"
+    template.properties.machine_type = machine_type
     template.properties.network_interfaces = [network_interface]
 
     template_client = compute_v1.InstanceTemplatesClient()
@@ -67,3 +76,29 @@ def get_instance_template(
     template_client = compute_v1.InstanceTemplatesClient()
     return template_client.get(project=project_id, instance_template=template_name)
 
+
+def list_instance_templates(project_id: str) -> Iterable[compute_v1.InstanceTemplate]:
+    """
+    Get a list of InstanceTemplate objects available in a project.
+    Args:
+        project_id: project ID or project number of the Cloud project you use.
+    Returns:
+        Iterable list of InstanceTemplate objects.
+    """
+    template_client = compute_v1.InstanceTemplatesClient()
+    return template_client.list(project=project_id)
+
+
+def delete_instance_template(project_id: str, template_name: str):
+    """
+    Delete an instance template.
+    Args:
+        project_id: project ID or project number of the Cloud project you use.
+        template_name: name of the template to delete.
+    """
+    template_client = compute_v1.InstanceTemplatesClient()
+    operation = template_client.delete(
+        project=project_id, instance_template=template_name
+    )
+    wait_for_extended_operation(operation, "instance template deletion")
+    return
