@@ -188,3 +188,25 @@ def list_instances(project_id: str, zone: str) -> Iterable[compute_v1.Instance]:
 
     return instance_list
 
+
+def delete_instance(project_id, zone: str, instance_name: str) -> None:
+    """
+    Deletes the specified instance resource.
+    Args:
+        project_id: ID or number of the project you want to use.
+        zone: Name of the zone you want to check, for example: us-west3-b
+        instance_name: Name of the instance resource to delete.
+    """
+    instance_client = compute_v1.InstancesClient()
+    request = compute_v1.DeleteInstanceRequest()
+    request.zone = zone
+    request.project = project_id
+    request.instance = instance_name
+
+    print(f"Deleting the {instance_name} instance in {zone}...")
+
+    operation = instance_client.delete(request=request)
+
+    wait_for_extended_operation(operation, "instance deletion")
+
+    print(f"Instance {instance_name} deleted.")
