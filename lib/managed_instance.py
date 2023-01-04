@@ -1,7 +1,6 @@
 from lib.template import get_instance_template
 from google.cloud import compute_v1
-from utils.gcp import wait_for_extended_operation
-
+from utils.gcp import wait_for_extended_operation, create_health_check
 # create managed instance group 
 def create_managed_instance_group(project_id, zone, instance_group_name, instance_template_name):
     # get instance template 
@@ -50,12 +49,43 @@ def create_managed_instance_group_request(project_id, zone, instance_group_name,
     # set zone
     instance_group_manager_request.zone = zone
     # set instance group manager resource
+
+
+    # create health check
+    #health_check = create_health_check(project_id, "health-check-1", "http", 80, "/")
+
     instance_group_manager_request.instance_group_manager_resource = compute_v1.InstanceGroupManager(
         name=instance_group_name,
         base_instance_name=instance_group_name,
         instance_template=instance_template.self_link,
         target_size=target_size,
+        #add stateful policy to instance group manager
+        stateful_policy=compute_v1.StatefulPolicy(
+            preserved_state=compute_v1.StatefulPolicyPreservedState(
+                disks=
+                    {
+                        "persistent-disk-0" : 
+                            compute_v1.StatefulPolicyPreservedStateDiskDevice(
+                                auto_delete="never"
+                            )
+                    }
+            )
+        ),
+        # set distrubution policy to instance group manager
+        distribution_policy=compute_v1.DistributionPolicy(
+            target_shape=compute_v1.InstanceGroupManager.TargetShapeValueValuesEnum.EVEN
+        ),
+
+        # add autohealing policy to instance group manager
+        # auto_healing_policies=[
+        #     compute_v1.InstanceGroupManagerAutoHealingPolicy(
+        #         health_check=health_check['self_link'],
+        #         initial_delay_sec=60,
+        #     )
+        # ],
     )
+
+    
     # return instance group manager request
     return instance_group_manager_request
     
