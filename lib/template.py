@@ -1,6 +1,8 @@
 from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, disk_from_image
 from typing import Iterable
+import json
+import os
 
 def create_template(
     project_id: str,
@@ -25,14 +27,8 @@ def create_template(
     # get disk from image
     #disk_type_name = f"zones/{zone}/diskTypes/{disk_type}"
     disk = disk_from_image(disk_type, disk_size, disk_boot_auto, machine_image.self_link)
-    # initialize_params = compute_v1.AttachedDiskInitializeParams()
-    # initialize_params.source_image = (
-    #     machine_image
-    # )
-    # initialize_params.disk_size_gb = 250
-    # disk.initialize_params = initialize_params
-    # disk.auto_delete = True
-    # disk.boot = True
+    # Add google API support in the template so that it can be used inside the vm
+
 
     # The template connects the instance to the `default` network,
     # without specifying a subnetwork.
@@ -52,6 +48,18 @@ def create_template(
     template.properties.machine_type = machine_type
     template.properties.network_interfaces = [network_interface]
 
+    # get email from file that we have it's name on GOOGLE_APPLICATION_CREDENTIALS environment variable
+    with open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]) as f:
+        data = json.load(f)
+        email = data["client_email"]
+
+    # set scopes in serviceaccounts
+    service_account = compute_v1.ServiceAccount()
+    service_account.email = email
+    service_account.scopes = [
+        "https://www.googleapis.com/auth/cloud-platform"
+    ]
+    template.properties.service_accounts = [service_account]
 
     # set the startup script url in the metadata
     metadata = compute_v1.Metadata()
