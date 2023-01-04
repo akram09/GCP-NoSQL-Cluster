@@ -3,9 +3,14 @@ from dotenv import load_dotenv
 from utils.env import check_env
 from utils.args import parse_cluster_args, create_template_from_args, create_template_from_yaml
 from lib.managed_instance import create_managed_instance_group
-from lib.template import list_instance_templates, delete_all_templates
+from lib.template import list_instance_templates, delete_instance_template, get_instance_template
+from lib.firewall import create_firewall_rule, check_firewall_rule
 from lib.vm_instance import create_instance_from_template, delete_instance
+
 if __name__ == "__main__":
+    # parse arguments
+    args = parse_cluster_args()
+
     # load environment variables
     load_dotenv()
     # check environment variables 
@@ -15,6 +20,7 @@ if __name__ == "__main__":
     project_id = os.environ["GOOGLE_CLOUD_PROJECT"]
     # get zone
     zone = os.environ["GOOGLE_CLOUD_ZONE"]
+
 
     # parse arguments
     args = parse_cluster_args()
@@ -45,5 +51,11 @@ if __name__ == "__main__":
 
 
     # Create a managed instance group 
-    create_managed_instance_group(project_id, zone, "mig-1", template.name)
+    create_managed_instance_group(project_id, zone, args.cluster_name, template.name)
+    # Check if the firewall rule exists
+    if check_firewall_rule(project_id, args.cluster_name+"-firewall"):
+        print("Firewall rule exists")
+    else:
+        print("Firewall rule does not exist")
+        create_firewall_rule(project_id, args.cluster_name+"-firewall")
     

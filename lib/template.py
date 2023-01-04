@@ -44,6 +44,10 @@ def create_template(
 
     template = compute_v1.InstanceTemplate()
     template.name = template_name
+    # create instance tags 
+    tags = compute_v1.Tags()
+    tags.items = ["couchbase-server"]
+    template.properties.tags = tags 
     template.properties.disks = [disk]
     template.properties.machine_type = machine_type
     template.properties.network_interfaces = [network_interface]
@@ -124,6 +128,7 @@ def delete_instance_template(project_id: str, template_name: str):
     wait_for_extended_operation(operation, "instance template deletion")
     return
 
+
 def delete_all_templates(project_id):
     """
     Delete all instance templates in a project.
@@ -133,3 +138,4 @@ def delete_all_templates(project_id):
     for template in list_instance_templates(project_id):
         delete_instance_template(project_id, template.name)
     print("All templates are deleted.")
+
