@@ -10,6 +10,7 @@ def create_template(
     machine_image: compute_v1.types.compute.Image,
     disk_type: str,
     disk_size: int,
+    startup_script_url: str,
     disk_boot_auto: bool = True
     ):
     """
@@ -50,6 +51,18 @@ def create_template(
     template.properties.disks = [disk]
     template.properties.machine_type = machine_type
     template.properties.network_interfaces = [network_interface]
+
+
+    # set the startup script url in the metadata
+    metadata = compute_v1.Metadata()
+    metadata.items = [
+        {
+            "key": "startup-script-url",
+            "value": startup_script_url
+        }
+    ]
+    template.properties.metadata = metadata
+
 
     template_client = compute_v1.InstanceTemplatesClient()
     operation = template_client.insert(
@@ -102,3 +115,13 @@ def delete_instance_template(project_id: str, template_name: str):
     )
     wait_for_extended_operation(operation, "instance template deletion")
     return
+
+def delete_all_templates(project_id):
+    """
+    Delete all instance templates in a project.
+    Args:
+        project_id: project ID or project number of the Cloud project you use.
+    """
+    for template in list_instance_templates(project_id):
+        delete_instance_template(project_id, template.name)
+    print("All templates are deleted.")

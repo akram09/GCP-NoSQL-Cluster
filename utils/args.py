@@ -1,6 +1,7 @@
 import argparse
 from utils.gcp import get_image_from_family
 from lib.template import create_template
+from lib.storage import upload_startup_script
 import yaml
 
 # Parse cluster definition arguments 
@@ -27,6 +28,7 @@ def parse_cluster_args():
 
     return parser.parse_args()
 
+
 def create_template_from_args(
     project_id: str,
     zone:str,
@@ -39,6 +41,11 @@ def create_template_from_args(
         project=args.image_project, family=args.image_family
     )
 
+
+    # upload the startup script to the bucket
+    startup_script_url = upload_startup_script(args.image_family, args.bucket)
+
+
     template = create_template(
         project_id,
         zone,
@@ -46,7 +53,8 @@ def create_template_from_args(
         args.machine_type,
         machine_image,
         args.disk_type,
-        args.disk_size
+        args.disk_size,
+        startup_script_url
     )
     
     return template
@@ -66,27 +74,22 @@ def create_template_from_yaml(
             data = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
             print(exc)
-    # verify if the yaml file has attributes: cluster_name, cluster_size, image_project, image_family, machine_type, disk_type, disk_size
+    # verify if the yaml file has attributes: cluster_name, cluster_size, bucket
     if data['cluster_name'] == None:
        raise Exception("cluster_name is not defined in the yaml file")
     if data['cluster_size'] == None:
      raise Exception("cluster_size is not defined in the yaml file")
-    if data['image_project'] == None:
-        raise Exception("image_project is not defined in the yaml file")
-    if data['image_family'] == None:
-        raise Exception("image_family is not defined in the yaml file")
-    if data['machine_type'] == None:
-        raise Exception("machine_type is not defined in the yaml file")
-    if data['disk_type'] == None:
-        raise Exception("disk_type is not defined in the yaml file")
-    if data['disk_size'] == None:
-        raise Exception("disk_size is not defined in the yaml file")
+    if data['bucket'] == None:
+        raise Exception("bucket is not defined in the yaml file")
 
 
     #Get the machine image from the project and family
     machine_image = get_image_from_family(
         project=data['image_project'], family=data['image_family']
     )
+
+    # upload the startup script to the bucket
+    startup_script_url = upload_startup_script(data['image_family'], data['bucket'])
 
     template = create_template(
         project_id,
@@ -95,7 +98,8 @@ def create_template_from_yaml(
         data['machine_type'],
         machine_image,
         data['disk_type'],
-        data['disk_size']
+        data['disk_size'],
+        startup_script_url
     )
     
     return template 
