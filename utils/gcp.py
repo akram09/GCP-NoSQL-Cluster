@@ -82,7 +82,6 @@ def wait_for_operation_global(compute, project, operation):
         time.sleep(1)
 
 
-
 def get_image_from_family(project: str, family: str) -> compute_v1.Image:
     """
     Retrieve the newest image that is part of a given family in a project.
@@ -103,7 +102,7 @@ def disk_from_image(
     disk_size_gb: int,
     boot: bool,
     source_image: str,
-    auto_delete: bool = True,
+    auto_delete: bool = False,
 ) -> compute_v1.AttachedDisk:
     """
     Create an AttachedDisk object to be used in VM instance creation. Uses an image as the
@@ -121,8 +120,11 @@ def disk_from_image(
     Returns:
         AttachedDisk object configured to be created using the specified image.
     """
+
+
     boot_disk = compute_v1.AttachedDisk()
     initialize_params = compute_v1.AttachedDiskInitializeParams()
+    initialize_params.disk_name = "data-disk"
     initialize_params.source_image = source_image
     initialize_params.disk_size_gb = disk_size_gb
     initialize_params.disk_type = disk_type
@@ -134,4 +136,27 @@ def disk_from_image(
     return boot_disk
 
 
+def create_health_check(compute, project, name, port, protocol, path):
+    """
+    function to check if health check exists ortherwise create it
+    """
+    health_check = compute.healthChecks().get(project=project, healthCheck=name).execute()
+    if health_check:
+        print("Health check already exists")
+        return health_check
+    else:
+        print("Creating health check")
+        health_check_body = {
+            "name": name,
+            "port": port,
+            "protocol": protocol,
+            "requestPath": path,
+        }
+        health_check = (
+            compute.healthChecks()
+            .insert(project=project, body=health_check_body)
+            .execute()
+        )
+        wait_for_operation(compute, project, "global", health_check["name"])
+        return health_check
 

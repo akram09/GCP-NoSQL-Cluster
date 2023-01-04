@@ -1,0 +1,8 @@
+cluster_name: mig-1
+cluster_size: 4
+image_project: debian-cloud
+image_family: debian-11
+machine_type: e2-micro
+disk_type: pd-standard
+disk_size: 10
+bucket: bucket-7972cfbe-3da3-4f7f-a1fa-770a13c853eb 
