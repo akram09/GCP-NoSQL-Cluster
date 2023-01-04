@@ -45,19 +45,19 @@ def create_template_from_args(
     # upload the startup script to the bucket
     startup_script_url = upload_startup_script(args.image_family, args.bucket)
 
-
-    template = create_template(
-        project_id,
-        zone,
-        template_name,
-        args.machine_type,
-        machine_image,
-        args.disk_type,
-        args.disk_size,
-        startup_script_url
-    )
-    
-    return template
+    print(startup_script_url)
+    # template = create_template(
+    #     project_id,
+    #     zone,
+    #     template_name,
+    #     args.machine_type,
+    #     machine_image,
+    #     args.disk_type,
+    #     args.disk_size,
+    #     startup_script_url
+    # )
+    # 
+    # return template
 
     
 # function that creates template from yaml file instead of args

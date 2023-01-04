@@ -21,10 +21,6 @@ if __name__ == "__main__":
     # get zone
     zone = os.environ["GOOGLE_CLOUD_ZONE"]
 
-
-    # parse arguments
-    args = parse_cluster_args()
-
     #Create instance templace
     template_name = f"template-{uuid.uuid4()}"
 
@@ -43,7 +39,6 @@ if __name__ == "__main__":
 
         template = create_template_from_args(project_id, zone, template_name, args)
 
-    # #print(template)
     
     # Creating vm instance in order to test the service account option in template for downloading files from bucket
     #create_instance_from_template(project_id, zone, "instance-1", template.self_link)
@@ -51,11 +46,11 @@ if __name__ == "__main__":
 
 
     # Create a managed instance group 
-    create_managed_instance_group(project_id, zone, args.cluster_name, template.name)
+    create_managed_instance_group(project_id, zone,"mig-1", template.name)
     # Check if the firewall rule exists
-    if check_firewall_rule(project_id, args.cluster_name+"-firewall"):
-        print("Firewall rule exists")
-    else:
-        print("Firewall rule does not exist")
-        create_firewall_rule(project_id, args.cluster_name+"-firewall")
+    # if check_firewall_rule(project_id, args.cluster_name+"-firewall"):
+    #     print("Firewall rule exists")
+    # else:
+    #     print("Firewall rule does not exist")
+    #     create_firewall_rule(project_id, args.cluster_name+"-firewall")
     

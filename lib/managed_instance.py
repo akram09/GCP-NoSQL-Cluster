@@ -53,13 +53,30 @@ def create_managed_instance_group_request(project_id, zone, instance_group_name,
 
     # create health check
     #health_check = create_health_check(project_id, "health-check-1", "http", 80, "/")
+    # distribution_policy = compute_v1.DistributionPolicy()
+    # # set zones 
+    # distribution_policy.zones = [ 
+    #     compute_v1.DistributionPolicyZoneConfiguration(
+    #         zone="europe-west9-a"
+    #     ),
+    #     compute_v1.DistributionPolicyZoneConfiguration(
+    #         zone="europe-west9-b"
+    #     ),
+    #     compute_v1.DistributionPolicyZoneConfiguration(
+    #         zone="europe-west9-c"
+    #     )
+    # ]
+    # set target shape 
+    # print(compute_v1.DistributionPolicy.TargetShape.EVEN)
+    # distribution_policy.target_shape = compute_v1.DistributionPolicy.TargetShape.EVEN
+
 
     instance_group_manager_request.instance_group_manager_resource = compute_v1.InstanceGroupManager(
         name=instance_group_name,
         base_instance_name=instance_group_name,
         instance_template=instance_template.self_link,
         target_size=target_size,
-        #add stateful policy to instance group manager
+        # add stateful policy to instance group manager
         stateful_policy=compute_v1.StatefulPolicy(
             preserved_state=compute_v1.StatefulPolicyPreservedState(
                 disks=
@@ -71,10 +88,8 @@ def create_managed_instance_group_request(project_id, zone, instance_group_name,
                     }
             )
         ),
-        # set distrubution policy to instance group manager
-        distribution_policy=compute_v1.DistributionPolicy(
-            target_shape=compute_v1.InstanceGroupManager.TargetShapeValueValuesEnum.EVEN
-        ),
+        # set distribution policy to the MIG 
+        # distribution_policy=distribution_policy,
 
         # add autohealing policy to instance group manager
         # auto_healing_policies=[

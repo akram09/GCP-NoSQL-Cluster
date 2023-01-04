@@ -4,7 +4,7 @@ import sys
 from typing import Any
 
 def wait_for_extended_operation(
-    operation: ExtendedOperation, verbose_name: str = "operation", timeout: int = 300
+    operation: ExtendedOperation, verbose_name: str = "operation", timeout: int = 1000
 ) -> Any:
     """
     This method will wait for the extended (long-running) operation to
