@@ -48,18 +48,17 @@ def create_template(
     template.properties.machine_type = machine_type
     template.properties.network_interfaces = [network_interface]
 
-    # get email from file that we have it's name on GOOGLE_APPLICATION_CREDENTIALS environment variable
-    with open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]) as f:
-        data = json.load(f)
-        email = data["client_email"]
+    # get email from COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL environment variable
+    email = os.environ["COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL"]
+    
 
-    # set scopes in serviceaccounts
-    # service_account = compute_v1.ServiceAccount()
-    # service_account.email = email
-    # service_account.scopes = [
-    #     "https://www.googleapis.com/auth/cloud-platform"
-    # ]
-    # template.properties.service_accounts = [service_account]
+    #set scopes in serviceaccounts
+    service_account = compute_v1.ServiceAccount()
+    service_account.email = email
+    service_account.scopes = [
+        "https://www.googleapis.com/auth/cloud-platform"
+    ]
+    template.properties.service_accounts = [service_account]
 
     # set the startup script url in the metadata
     metadata = compute_v1.Metadata()

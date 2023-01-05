@@ -118,4 +118,4 @@ def create_cluster(project_id: str, zone: str, cluster_args):
     )
     
     #Create instance group
-    #create_managed_instance_group(project_id, zone, cluster_args.cluster_name, template.name)
+    create_managed_instance_group(project_id, zone, cluster_args.cluster_name, template.name)
