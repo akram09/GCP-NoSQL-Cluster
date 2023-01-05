@@ -54,12 +54,12 @@ def create_template(
         email = data["client_email"]
 
     # set scopes in serviceaccounts
-    service_account = compute_v1.ServiceAccount()
-    service_account.email = email
-    service_account.scopes = [
-        "https://www.googleapis.com/auth/cloud-platform"
-    ]
-    template.properties.service_accounts = [service_account]
+    # service_account = compute_v1.ServiceAccount()
+    # service_account.email = email
+    # service_account.scopes = [
+    #     "https://www.googleapis.com/auth/cloud-platform"
+    # ]
+    # template.properties.service_accounts = [service_account]
 
     # set the startup script url in the metadata
     metadata = compute_v1.Metadata()

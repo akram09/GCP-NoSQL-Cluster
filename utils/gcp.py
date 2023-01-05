@@ -4,7 +4,7 @@ import sys
 from typing import Any
 
 def wait_for_extended_operation(
-    operation: ExtendedOperation, verbose_name: str = "operation", timeout: int = 300
+    operation: ExtendedOperation, verbose_name: str = "operation", timeout: int = 1000
 ) -> Any:
     """
     This method will wait for the extended (long-running) operation to
@@ -27,6 +27,7 @@ def wait_for_extended_operation(
         In case of an operation taking longer than `timeout` seconds to complete,
         a `concurrent.futures.TimeoutError` will be raised.
     """
+
     result = operation.result(timeout=timeout)
 
     if operation.error_code:
@@ -124,7 +125,6 @@ def disk_from_image(
 
     boot_disk = compute_v1.AttachedDisk()
     initialize_params = compute_v1.AttachedDiskInitializeParams()
-    initialize_params.disk_name = "data-disk"
     initialize_params.source_image = source_image
     initialize_params.disk_size_gb = disk_size_gb
     initialize_params.disk_type = disk_type

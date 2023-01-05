@@ -1,6 +1,10 @@
 from lib.template import get_instance_template
 from google.cloud import compute_v1
-from utils.gcp import wait_for_extended_operation, create_health_check
+from utils.gcp import wait_for_extended_operation, get_image_from_family
+from lib.storage import upload_startup_script
+from lib.template import create_template
+import uuid
+
 # create managed instance group 
 def create_managed_instance_group(project_id, zone, instance_group_name, instance_template_name):
     # get instance template 
@@ -71,10 +75,6 @@ def create_managed_instance_group_request(project_id, zone, instance_group_name,
                     }
             )
         ),
-        # set distrubution policy to instance group manager
-        distribution_policy=compute_v1.DistributionPolicy(
-            target_shape=compute_v1.InstanceGroupManager.TargetShapeValueValuesEnum.EVEN
-        ),
 
         # add autohealing policy to instance group manager
         # auto_healing_policies=[
@@ -89,3 +89,32 @@ def create_managed_instance_group_request(project_id, zone, instance_group_name,
     # return instance group manager request
     return instance_group_manager_request
     
+
+def create_cluster(project_id: str, zone: str, cluster_args):
+
+    #Create instance templace
+    template_name = f"template-{uuid.uuid4()}"
+
+    #Get the machine image from the project and family
+    machine_image = get_image_from_family(
+        project=cluster_args.image_project, family=cluster_args.image_family
+    )
+
+
+    # upload the startup script to the bucket
+    startup_script_url = upload_startup_script(cluster_args.image_family, cluster_args.bucket)
+
+    # create instance template
+    template = create_template(
+        project_id,
+        zone,
+        template_name,
+        cluster_args.machine_type,
+        machine_image,
+        cluster_args.disk_type,
+        cluster_args.disk_size,
+        startup_script_url
+    )
+
+    #Create instance group
+    create_managed_instance_group(project_id, zone, cluster_args.cluster_name, template.name)

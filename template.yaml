@@ -1,4 +1,4 @@
-cluster_name: mig-1
+cluster_name: mig-4
 cluster_size: 4
 image_project: debian-cloud
 image_family: debian-11
