@@ -52,8 +52,9 @@ def create_template(
     template.properties.machine_type = machine_type
     template.properties.network_interfaces = [network_interface]
 
-
-    # set scopes in serviceaccounts
+    # get email from COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL environment variable
+    email = os.environ["COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL"]
+    #set scopes in serviceaccounts
     service_account = compute_v1.ServiceAccount()
     service_account.email = "153730055504-compute@developer.gserviceaccount.com"
     service_account.scopes = [

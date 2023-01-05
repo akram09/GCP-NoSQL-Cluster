@@ -4,7 +4,7 @@ import sys
 from typing import Any
 
 def wait_for_extended_operation(
-    operation: ExtendedOperation, verbose_name: str = "operation", timeout: int = 300
+    operation: ExtendedOperation, verbose_name: str = "operation", timeout: int = 1000
 ) -> Any:
     """
     This method will wait for the extended (long-running) operation to
@@ -27,11 +27,8 @@ def wait_for_extended_operation(
         In case of an operation taking longer than `timeout` seconds to complete,
         a `concurrent.futures.TimeoutError` will be raised.
     """
-    try:
-        result = operation.result(timeout=timeout)
-    except Exception as e:
-        print(f"Error during {verbose_name}:", file=sys.stderr)
-        print(e, file=sys.stderr)
+
+    result = operation.result(timeout=timeout)
 
     if operation.error_code:
         print(
@@ -83,7 +80,6 @@ def wait_for_operation_global(compute, project, operation):
                 raise Exception(result["error"])
             return result
 
-        time.sleep(1)
 
 
 def get_image_from_family(project: str, family: str) -> compute_v1.Image:

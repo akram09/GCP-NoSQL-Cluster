@@ -1,9 +1,15 @@
 import time 
+import uuid
 from utils.exec import execute_cluster_init
 from lib.template import get_instance_template
 from lib.vm_instance import get_instance
 from google.cloud import compute_v1
-from utils.gcp import wait_for_extended_operation, create_health_check
+from utils.gcp import wait_for_extended_operation, get_image_from_family
+from lib.storage import upload_startup_script
+from lib.template import create_template
+from lib.vm_instance import create_instance_from_template
+from lib.firewall import create_firewall_rule, check_firewall_rule
+
 # create managed instance group 
 def create_managed_instance_group(project_id, zone, instance_group_name, instance_template_name):
     # get instance template 
@@ -159,7 +165,44 @@ def create_managed_instance_group_request(project_id, zone, instance_group_name,
         # ],
     )
 
-    print(instance_group_manager_request)    
-    # return instance group manager request
     return instance_group_manager_request
     
+
+def create_cluster(project_id: str, zone: str, cluster_args):
+
+    #Create instance templace
+    template_name = f"template-{uuid.uuid4()}"
+
+    #Get the machine image from the project and family
+    machine_image = get_image_from_family(
+        project=cluster_args.image_project, family=cluster_args.image_family
+    )
+
+
+    # upload the startup script to the bucket
+    startup_script_url = upload_startup_script(cluster_args.image_family, cluster_args.bucket)
+    
+    # create instance template
+    template = create_template(
+        project_id,
+        zone,
+        template_name,
+        cluster_args.machine_type,
+        machine_image,
+        cluster_args.disk_type,
+        cluster_args.disk_size,
+        startup_script_url
+    )
+    
+    #Create instance group
+    create_managed_instance_group(project_id, zone, cluster_args.cluster_name, template.name)
+    # Check if the firewall rule exists
+    if check_firewall_rule(project_id, args.cluster_name+"-firewall"):
+        print("Firewall rule exists")
+    else:
+        print("Firewall rule does not exist")
+        create_firewall_rule(project_id, args.cluster_name+"-firewall")
+
+    # Create a cluster from the instance group 
+    create_couchbase_cluster(project_id, zone, cluster_args.cluster_name, cluster_args.cluster_username, cluster_args.cluster_password)
+
