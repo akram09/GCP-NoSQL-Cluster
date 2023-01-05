@@ -23,8 +23,8 @@ if __name__ == "__main__":
     #delete_all_templates(project_id);exit()
 
     cluster_args = ClusterArgs(args)
-    print(cluster_args)
+    #print(cluster_args)
 
     # Create a managed instance group 
-    #create_cluster(project_id, zone, cluster_args)
+    create_cluster(project_id, zone, cluster_args)
     

@@ -103,6 +103,20 @@ def upload_startup_script(image_family: str, bucket_name: str):
     # Create the bucket if not existed
     bucket = create_bucket(bucket_name)
     
+    # Add Compute Engine default service account to the bucket
+    # read member from environment variable
+    member = f"user: {os.environ['COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL']}"
+    role = "roles/storage.objectViewer"
+
+    policy = bucket.get_iam_policy(requested_policy_version=3)
+
+    policy.bindings.append({"role": role, "members": {member}})
+
+    bucket.set_iam_policy(policy)
+
+    print(f"Added {member} with role {role} to {bucket_name}.")
+
+
     # upload the startup script to the bucket
     startup_script_url = upload_blob(bucket.name, os.path.abspath(f"bin/{startup_script}"), startup_script)
 

@@ -4,6 +4,7 @@ from utils.gcp import wait_for_extended_operation, get_image_from_family
 from lib.storage import upload_startup_script
 from lib.template import create_template
 import uuid
+from lib.vm_instance import create_instance_from_template
 
 # create managed instance group 
 def create_managed_instance_group(project_id, zone, instance_group_name, instance_template_name):
@@ -103,7 +104,7 @@ def create_cluster(project_id: str, zone: str, cluster_args):
 
     # upload the startup script to the bucket
     startup_script_url = upload_startup_script(cluster_args.image_family, cluster_args.bucket)
-
+    
     # create instance template
     template = create_template(
         project_id,
@@ -115,6 +116,6 @@ def create_cluster(project_id: str, zone: str, cluster_args):
         cluster_args.disk_size,
         startup_script_url
     )
-
+    
     #Create instance group
-    create_managed_instance_group(project_id, zone, cluster_args.cluster_name, template.name)
+    #create_managed_instance_group(project_id, zone, cluster_args.cluster_name, template.name)
