@@ -2,12 +2,12 @@
 # Init a couchbase cluster 
 
 # Create the cluster
-/opt/couchbase/bin/couchbase-cli cluster-init -c 10.200.15.210:8091 --cluster-username=admin --cluster-password=password 
+/opt/couchbase/bin/couchbase-cli cluster-init -c 10.200.15.211:8091 --cluster-username=m0kr4n3 --cluster-password=password 
 
 
   # Add nodes
-  /opt/couchbase/bin/couchbase-cli server-add -c 10.200.15.210:8091 --server-add=10.200.15.209:8091 --server-add-username=admin --server-add-password=password --username=admin --password=password
+  /opt/couchbase/bin/couchbase-cli server-add -c 10.200.15.211:8091 --server-add=10.200.15.212:8091 --server-add-username=m0kr4n3 --server-add-password=password --username=m0kr4n3 --password=password
 
 
 # Rebalance
-/opt/couchbase/bin/couchbase-cli rebalance -c 10.200.15.210:8091 -u admin -p password
+/opt/couchbase/bin/couchbase-cli rebalance -c 10.200.15.211:8091 -u m0kr4n3 -p password

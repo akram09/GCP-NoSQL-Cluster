@@ -1,10 +1,9 @@
 import os, uuid
 from dotenv import load_dotenv
 from utils.env import check_env
-from utils.args import parse_args, ClusterArgs
-from lib.managed_instance import create_managed_instance_group, create_couchbase_cluster create_cluster
-from lib.template import list_instance_templates, delete_instance_template, get_instance_template
-from lib.vm_instance import create_instance_from_template, delete_instance
+from utils.args import parse_cluster_args
+from cluster.cluster import ClusterArgs
+from lib.managed_instance import create_cluster 
 
 
 if __name__ == "__main__":
@@ -20,10 +19,6 @@ if __name__ == "__main__":
     project_id = os.environ["GOOGLE_CLOUD_PROJECT"]
     # get zone
     zone = os.environ["GOOGLE_CLOUD_ZONE"]
-
-    # parse arguments
-    args = parse_args()
-
 
     cluster_args = ClusterArgs(args)
 

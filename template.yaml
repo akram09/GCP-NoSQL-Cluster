@@ -1,5 +1,7 @@
 cluster_name: mig-4
 cluster_size: 4
+cluster_username: m0kr4n3
+cluster_password: password
 image_project: debian-cloud
 image_family: debian-11
 machine_type: e2-micro

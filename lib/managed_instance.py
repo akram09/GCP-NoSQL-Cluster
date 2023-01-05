@@ -7,7 +7,6 @@ from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, get_image_from_family
 from lib.storage import upload_startup_script
 from lib.template import create_template
-from lib.vm_instance import create_instance_from_template
 from lib.firewall import create_firewall_rule, check_firewall_rule
 
 # create managed instance group 
@@ -77,9 +76,6 @@ def create_couchbase_cluster(project_id, zone, instance_group_name, cluster_user
     execute_cluster_init(master_node_name, master_node_ip, cluster_username, cluster_password, nodes)
 
 
-
-
-
 # list instances of an instance group manager
 def list_instances(project_id, zone, instance_group_name):
     # create instance group manager client
@@ -94,6 +90,7 @@ def list_instances(project_id, zone, instance_group_name):
     )
     # return list 
     return instances
+
 
 # create managed instance group request 
 def create_managed_instance_group_request(project_id, zone, instance_group_name, instance_template, target_size):
@@ -196,12 +193,13 @@ def create_cluster(project_id: str, zone: str, cluster_args):
     
     #Create instance group
     create_managed_instance_group(project_id, zone, cluster_args.cluster_name, template.name)
+    
     # Check if the firewall rule exists
-    if check_firewall_rule(project_id, args.cluster_name+"-firewall"):
+    if check_firewall_rule(project_id, cluster_args.cluster_name+"-firewall"):
         print("Firewall rule exists")
     else:
         print("Firewall rule does not exist")
-        create_firewall_rule(project_id, args.cluster_name+"-firewall")
+        create_firewall_rule(project_id, cluster_args.cluster_name+"-firewall")
 
     # Create a cluster from the instance group 
     create_couchbase_cluster(project_id, zone, cluster_args.cluster_name, cluster_args.cluster_username, cluster_args.cluster_password)
