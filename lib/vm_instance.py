@@ -189,6 +189,26 @@ def list_instances(project_id: str, zone: str) -> Iterable[compute_v1.Instance]:
     return instance_list
 
 
+# get instance by name
+def get_instance(project_id: str, zone: str, instance_name: str) -> compute_v1.Instance:
+    """
+    Get an instance from a project's zone by name.
+
+    Args:
+        project_id: project ID or project number of the Cloud project you want to use.
+        zone: name of the zone you want to use. For example: “us-west3-b”
+        instance_name: name of the instance you want to get.
+    Returns:
+        Instance object.
+    """
+    instance_client = compute_v1.InstancesClient()
+    instance = instance_client.get(project=project_id, zone=zone, instance=instance_name)
+
+    print(f"Found instance {instance.name} in zone {zone}:")
+    print(instance)
+
+    return instance
+
 def delete_instance(project_id, zone: str, instance_name: str) -> None:
     """
     Deletes the specified instance resource.

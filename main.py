@@ -2,7 +2,7 @@ import os, uuid
 from dotenv import load_dotenv
 from utils.env import check_env
 from utils.args import parse_cluster_args, create_template_from_args, create_template_from_yaml
-from lib.managed_instance import create_managed_instance_group
+from lib.managed_instance import create_managed_instance_group, create_couchbase_cluster
 from lib.template import list_instance_templates, delete_instance_template, get_instance_template
 from lib.firewall import create_firewall_rule, check_firewall_rule
 from lib.vm_instance import create_instance_from_template, delete_instance
@@ -46,7 +46,9 @@ if __name__ == "__main__":
 
 
     # Create a managed instance group 
-    create_managed_instance_group(project_id, zone,"mig-1", template.name)
+    # create_managed_instance_group(project_id, zone,"mig-7", template.name)
+    # Create a cluster from the instance group 
+    create_couchbase_cluster(project_id, zone, "mig-6", "admin", "password")
     # Check if the firewall rule exists
     # if check_firewall_rule(project_id, args.cluster_name+"-firewall"):
     #     print("Firewall rule exists")

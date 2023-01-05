@@ -1,4 +1,7 @@
+import time 
+from utils.exec import execute_cluster_init
 from lib.template import get_instance_template
+from lib.vm_instance import get_instance
 from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, create_health_check
 # create managed instance group 
@@ -28,6 +31,63 @@ def create_managed_instance_group(project_id, zone, instance_group_name, instanc
     print(f"Instance group manager instance template: {instance_group_manager.instance_template}")
     print(f"Instance group manager base instance name: {instance_group_manager.base_instance_name}")
     print(f"Instance group manager status: {instance_group_manager.status}")
+    
+    # wait till the instance group manager is stable 
+    while not instance_group_manager.status.is_stable:
+        print("Waiting for instance group manager to be stable")
+        time.sleep(5)
+        instance_group_manager = instance_group_manager_client.get(
+            project=project_id, zone=zone, instance_group_manager=instance_group_name
+        )
+    print("Instance group manager is stable")
+    print("Waiting for the cluster nodes to be provisioned")
+    # wait for the managed instances to be provisioned 
+    time.sleep(60)
+    # return instance group manager
+    return instance_group_manager
+
+
+# create the couchbase cluster 
+def create_couchbase_cluster(project_id, zone, instance_group_name, cluster_username, cluster_password):
+    # list the managed instances 
+    managed_instances = list_instances(project_id, zone, instance_group_name)
+    # get instance names and ips
+    nodes = []
+    for managed_instance in managed_instances:
+        # get managed instance name 
+        managed_instance_name = managed_instance.instance.split("/")[-1]
+        # get instance by name
+        instance = get_instance(project_id, zone, managed_instance_name)
+        # get instance ip
+        instance_ip = instance.network_interfaces[0].network_i_p
+        # add instance name and ip to nodes list
+        nodes.append({"name": managed_instance_name, "ip": instance_ip})
+    # get the master node name and ip
+    master_node_name = nodes[0]["name"]
+    master_node_ip = nodes[0]["ip"]
+    # remove the master node from the list 
+    nodes.pop(0)
+    # execute the cluster creation script
+    execute_cluster_init(master_node_name, master_node_ip, cluster_username, cluster_password, nodes)
+
+
+
+
+
+# list instances of an instance group manager
+def list_instances(project_id, zone, instance_group_name):
+    # create instance group manager client
+    instance_group_manager_client = compute_v1.InstanceGroupManagersClient()
+    # create instance group manager request
+    instance_group_manager_request = compute_v1.ListManagedInstancesInstanceGroupManagersRequest(
+        project=project_id, zone=zone, instance_group_manager=instance_group_name
+    )
+    # list instances
+    instances = instance_group_manager_client.list_managed_instances(
+        request=instance_group_manager_request
+    )
+    # return list 
+    return instances
 
 # create managed instance group request 
 def create_managed_instance_group_request(project_id, zone, instance_group_name, instance_template, target_size):
@@ -70,7 +130,6 @@ def create_managed_instance_group_request(project_id, zone, instance_group_name,
     # print(compute_v1.DistributionPolicy.TargetShape.EVEN)
     # distribution_policy.target_shape = compute_v1.DistributionPolicy.TargetShape.EVEN
 
-
     instance_group_manager_request.instance_group_manager_resource = compute_v1.InstanceGroupManager(
         name=instance_group_name,
         base_instance_name=instance_group_name,
@@ -100,7 +159,7 @@ def create_managed_instance_group_request(project_id, zone, instance_group_name,
         # ],
     )
 
-    
+    print(instance_group_manager_request)    
     # return instance group manager request
     return instance_group_manager_request
     

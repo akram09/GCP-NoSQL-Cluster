@@ -11,10 +11,9 @@ sudo dpkg -i couchbase-release-1.0-amd64.deb
 sudo apt-get update
 
 # Install couchbase server
-sudo apt-get install couchbase-server-community
+sudo apt-get install -y couchbase-server-community
 
 
 # remove the meta package
 rm couchbase-release-1.0-amd64.deb
-
 
