@@ -2,3 +2,5 @@ service.json
 venv/
 __pycache__/
 .env
+lib/__pycache__/
+utils/__pycache__/
