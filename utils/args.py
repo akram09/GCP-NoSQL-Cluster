@@ -25,7 +25,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--image-project', dest='image_project', default='debian-cloud', help='Machine image project for the cluster')
     # machine image family with default value 
     parser.add_argument('--image-family', dest='image_family', default='debian-11', help='Machine image family project for the cluster')
-
+    # cluser username with default value
+    parser.add_argument('--cluster-username', dest='cluster-username', default='admin', help='Username for the cluster')
+    # cluster password with default value
+    parser.add_argument('--cluster-password', dest='cluster-password', default='password', help='Password for the cluster')
 
     return parser.parse_args()
 
@@ -57,6 +60,8 @@ class ClusterArgs:
         self.image_project = args.image_project
         self.image_family = args.image_family
         self.bucket = args.bucket
+        self.cluster_name_username = args.cluster_username
+        self.cluster_name_password = args.cluster_password
     
     def parse_from_yaml(self, yaml_file: str):
         # read the yaml file
@@ -85,6 +90,8 @@ class ClusterArgs:
         self.image_project = data['image_project']
         self.image_family = data['image_family']
         self.bucket = data['bucket']
+        self.cluster_username = data['cluster_username']
+        self.cluster_password = data['cluster_password']
 
         # method that prints the cluster arguments
     def __str__(self):
@@ -92,6 +99,6 @@ class ClusterArgs:
 
     def required_error_msg(self, arg):
         command_msg = '''usage: main.py [-h] --yaml-file YAML_FILE [--cluster-name CLUSTER_NAME] [--cluster-size CLUSTER_SIZE] [--bucket BUCKET] [--machine-type MACHINE_TYPE] [--disk-size DISK_SIZE]
-    [--disk-type DISK_TYPE] [--image-project IMAGE_PROJECT] [--image-family IMAGE_FAMILY]
+    [--disk-type DISK_TYPE] [--image-project IMAGE_PROJECT] [--image-family IMAGE_FAMILY] [ --cluster-username CLUSTER_USERNAME] [--cluster-password CLUSTER_PASSWORD]
             '''
         print(f"{command_msg}\nmain.py: error: the following arguments are required: --{'-'.join(arg.split('_'))}")
