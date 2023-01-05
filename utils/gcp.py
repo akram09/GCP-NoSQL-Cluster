@@ -80,7 +80,6 @@ def wait_for_operation_global(compute, project, operation):
                 raise Exception(result["error"])
             return result
 
-        time.sleep(1)
 
 
 def get_image_from_family(project: str, family: str) -> compute_v1.Image:
