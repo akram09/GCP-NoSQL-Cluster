@@ -47,7 +47,7 @@ def create_managed_instance_group(project_id, zone, instance_group_name, instanc
     print("Instance group manager is stable")
     print("Waiting for the cluster nodes to be provisioned")
     # wait for the managed instances to be provisioned 
-    time.sleep(60)
+    time.sleep(3*60)
     # return instance group manager
     return instance_group_manager
 
