@@ -4,13 +4,13 @@ from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, get_image_from_family
 
 # create managed instance group 
-def create_managed_instance_group(project_id, zone, instance_group_name, instance_template_name, instance_group_size):
+def create_region_managed_instance_group(project_id, region, instance_group_name, instance_template_name, instance_group_size):
     # get instance template 
     instance_template = get_instance_template(project_id, instance_template_name)
     # create instance group manager client
-    instance_group_manager_client = compute_v1.InstanceGroupManagersClient()
+    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
     # create instance group manager request
-    instance_group_manager_request = create_managed_instance_group_request(project_id, zone, instance_group_name, instance_template, instance_group_size)
+    instance_group_manager_request = create_region_managed_instance_group_request(project_id, region, instance_group_name, instance_template, instance_group_size)
     # create instance group manager
     operation = instance_group_manager_client.insert(
         request=instance_group_manager_request
@@ -19,7 +19,7 @@ def create_managed_instance_group(project_id, zone, instance_group_name, instanc
     wait_for_extended_operation(operation, "instance group manager creation")
     # get instance group manager
     instance_group_manager = instance_group_manager_client.get(
-        project=project_id, zone=zone, instance_group_manager=instance_group_name
+        project=project_id, region=region, instance_group_manager=instance_group_name
     )
     # print instance group manager details
     print(f"Instance group manager {instance_group_name} created.")
@@ -36,7 +36,7 @@ def create_managed_instance_group(project_id, zone, instance_group_name, instanc
         print("Waiting for instance group manager to be stable")
         time.sleep(5)
         instance_group_manager = instance_group_manager_client.get(
-            project=project_id, zone=zone, instance_group_manager=instance_group_name
+            project=project_id, region=region, instance_group_manager=instance_group_name
         )
     print("Instance group manager is stable")
     # return instance group manager
@@ -45,12 +45,12 @@ def create_managed_instance_group(project_id, zone, instance_group_name, instanc
 
 
 # list instances of an instance group manager
-def list_instances(project_id, zone, instance_group_name):
+def list_region_instances(project_id, region, instance_group_name):
     # create instance group manager client
-    instance_group_manager_client = compute_v1.InstanceGroupManagersClient()
+    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
     # create instance group manager request
-    instance_group_manager_request = compute_v1.ListManagedInstancesInstanceGroupManagersRequest(
-        project=project_id, zone=zone, instance_group_manager=instance_group_name
+    instance_group_manager_request = compute_v1.ListManagedInstancesRegionInstanceGroupManagersRequest(
+        project=project_id, region=region, instance_group_manager=instance_group_name
     )
     # list instances
     instances = instance_group_manager_client.list_managed_instances(
@@ -61,37 +61,34 @@ def list_instances(project_id, zone, instance_group_name):
 
 
 # create managed instance group request 
-def create_managed_instance_group_request(project_id, zone, instance_group_name, instance_template, target_size):
+def create_region_managed_instance_group_request(project_id, region, instance_group_name, instance_template, target_size):
     """
     Creates a request to create a managed instance group.
     Args:
         project_id: ID or number of the project you want to use.
-        zone: Name of the zone you want to check, for example: us-west3-b
+        region: Region where the managed instance group will be created.
         instance_group_name: Name of the managed instance group.
         instance_template: Template used for creating the managed instance group.
         target_size: Target size of the managed instance group.
     Returns:
-        InsertInstanceGroupManagerRequest object.
+        RegionInsertInstanceGroupManagerRequest
     """
     # create instance group manager request
-    instance_group_manager_request = compute_v1.InsertInstanceGroupManagerRequest()
+    instance_group_manager_request = compute_v1.InsertRegionInstanceGroupManagerRequest()
     # set project id
     instance_group_manager_request.project = project_id
-    # set zone
-    instance_group_manager_request.zone = zone
-    # set instance group manager resource
-
+    # set region
+    instance_group_manager_request.region = region
     # create distribution policy
     distribution_policy = compute_v1.DistributionPolicy()
     
     # set target shape 
     print(f"target shape of distribution policy: ANY'")
     print("When the target shape is ANY, the group manager will create instances across all available zones that respect the resource constraints.")
-    distribution_policy.target_shape = "ANY"
+    distribution_policy.target_shape = "BALANCED"
 
     instance_group_manager_request.instance_group_manager_resource = compute_v1.InstanceGroupManager(
         name=instance_group_name,
-        region=zone[:-2],
         base_instance_name=instance_group_name,
         instance_template=instance_template.self_link,
         target_size=target_size,
@@ -109,6 +106,10 @@ def create_managed_instance_group_request(project_id, zone, instance_group_name,
         ),
         # set distribution policy to the MIG 
         distribution_policy=distribution_policy,
+        # set update policy 
+        update_policy=compute_v1.InstanceGroupManagerUpdatePolicy(
+            instance_redistribution_type="NONE",
+        ),
 
         # add autohealing policy to instance group manager
         # auto_healing_policies=[

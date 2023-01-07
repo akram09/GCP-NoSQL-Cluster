@@ -203,10 +203,6 @@ def get_instance(project_id: str, zone: str, instance_name: str) -> compute_v1.I
     """
     instance_client = compute_v1.InstancesClient()
     instance = instance_client.get(project=project_id, zone=zone, instance=instance_name)
-
-    print(f"Found instance {instance.name} in zone {zone}:")
-    print(instance)
-
     return instance
 
 def delete_instance(project_id, zone: str, instance_name: str) -> None:
@@ -230,3 +226,44 @@ def delete_instance(project_id, zone: str, instance_name: str) -> None:
     wait_for_extended_operation(operation, "instance deletion")
 
     print(f"Instance {instance_name} deleted.")
+
+
+
+# get instances from managed instances 
+def get_instances_from_managed_instances(project_id, managed_instances):
+    instances = []
+    # loop over managed instances 
+    for managed_instance in managed_instances:
+        # get name and zone 
+        instance_full_name = managed_instance.instance
+        instance_name = instance_full_name.split("/")[-1]
+        zone = instance_full_name.split("/")[-3]
+        # get instance 
+        instance = get_instance(project_id, zone, instance_name)
+        instances.append(instance)
+    return instances
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

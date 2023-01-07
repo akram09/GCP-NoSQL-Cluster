@@ -30,10 +30,7 @@ def create_template(
     key_ring_id = f"key-ring-{template_name.replace('template-', '')}"
     key_ring = create_key_ring(project_id, "global", key_ring_id)
     key_id = f"key-{template_name.replace('template-', '')}"
-    key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id)
-    
-
-    
+    key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id) 
     
     # get disk from image
     disk = disk_from_image(disk_type, disk_size, key, disk_boot_auto, machine_image.self_link)
