@@ -35,13 +35,6 @@ def create_template(
     network_interface = compute_v1.NetworkInterface()
     network_interface.name = "global/networks/default"
 
-    # The template lets the instance use an external IP address.
-    access_config = compute_v1.AccessConfig()
-    access_config.name = "External NAT"
-    access_config.type_ = "ONE_TO_ONE_NAT"
-    access_config.network_tier = "PREMIUM"
-    network_interface.access_configs = [access_config]
-
     template = compute_v1.InstanceTemplate()
     template.name = template_name
     # create instance tags 
