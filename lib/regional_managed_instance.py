@@ -39,6 +39,9 @@ def create_region_managed_instance_group(project_id, region, instance_group_name
             project=project_id, region=region, instance_group_manager=instance_group_name
         )
     print("Instance group manager is stable")
+    # witing for instances to be provisioned
+    print("Waiting for instances to be provisioned")
+    time.sleep(60)
     # return instance group manager
     return instance_group_manager
 

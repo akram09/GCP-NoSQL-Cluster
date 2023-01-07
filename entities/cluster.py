@@ -37,23 +37,23 @@ class Cluster:
         startup_script_url = upload_startup_script(self.image_family, self.bucket)
         
         # create instance template
-        # template = create_template(
-        #     project.project_id,
-        #     project.zone,
-        #     template_name,
-        #     self.machine_type,
-        #     machine_image,
-        #     self.disk_type,
-        #     self.disk_size,
-        #     startup_script_url
-        # )
+        template = create_template(
+            project.project_id,
+            project.zone,
+            template_name,
+            self.machine_type,
+            machine_image,
+            self.disk_type,
+            self.disk_size,
+            startup_script_url
+        )
         
         # if the cluster region is specified then create regional managed instance 
-        # if self.cluster_region != None:
-        #     create_region_managed_instance_group(project.project_id, self.cluster_region, self.cluster_name, template.name, self.cluster_size)
-        # else: 
-        #     #Create instance group
-        #     create_managed_instance_group(project.project_id, self.cluster_region, self.cluster_name, template.name, self.cluster_size)
+        if self.cluster_region != None:
+            create_region_managed_instance_group(project.project_id, self.cluster_region, self.cluster_name, template.name, self.cluster_size)
+        else: 
+            #Create instance group
+            create_managed_instance_group(project.project_id, self.cluster_region, self.cluster_name, template.name, self.cluster_size)
         
         # Check if the firewall rule exists
         if check_firewall_rule(project.project_id, self.cluster_name+"-firewall"):

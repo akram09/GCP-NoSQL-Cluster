@@ -1,5 +1,5 @@
 cluster_region: europe-west9
-cluster_name: mig-5
+cluster_name: mig-7
 cluster_size: 4
 cluster_username: m0kr4n3
 cluster_password: password
