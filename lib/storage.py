@@ -1,5 +1,6 @@
 from google.cloud import storage
 import os
+from jinja2 import Template
 
 def create_bucket(bucket_name):
     """Creates a new bucket."""
@@ -93,10 +94,13 @@ def upload_startup_script(image_family: str, bucket_name: str):
     dist = image_family.split('-')[0]
     if dist == 'debian' or dist == 'ubuntu':
         startup_script = "startup-script-debian.sh"
+        script_template = "startup-script-debian.j2"
     elif dist == 'rhel':
         startup_script = "startup-script-rhel.sh"
+        script_template = "startup-script-rhel.j2"
     elif dist ==  'suse':
         startup_script = "startup-script-suse.sh"
+        script_template = "startup-script-suse.j2"
     else:
         raise("There is no startup script for the selected OS family.")
 
@@ -116,8 +120,35 @@ def upload_startup_script(image_family: str, bucket_name: str):
 
     print(f"Added {member} with role {role} to {bucket_name}.")
 
+    # read the template 
+    with open(f"./bin/couchbase-install/{script_template}", "r") as f:
+        template = Template(f.read())
+    # render the template 
+    rendered_template = template.render(bucket_name=bucket_name)
+    # write the rendered template to a file
+    with open(f"./bin/couchbase-install/{startup_script}", "w") as f:
+        f.write(rendered_template)
 
     # upload the startup script to the bucket
-    startup_script_url = upload_blob(bucket.name, os.path.abspath(f"bin/{startup_script}"), startup_script)
+    startup_script_url = upload_blob(bucket.name, os.path.abspath(f"bin/couchbase-install/{startup_script}"), startup_script)
 
     return startup_script_url
+
+# render the cluster provisioning script and upload it to the bucket 
+def upload_cluster_provisioning_script(bucket_name: str): 
+    cluster_provisioning_script = "cluster-init.sh"
+    script_template = "cluster-init.j2"
+
+    # read the template 
+    with open(f"./bin/cluster-provisioning/{script_template}", "r") as f:
+        template = Template(f.read())
+    # render the template 
+    rendered_template = template.render()
+    # write the rendered template to a file
+    with open(f"./bin/cluster-provisioning/{cluster_provisioning_script}", "w") as f:
+        f.write(rendered_template)
+
+    # upload the startup script to the bucket
+    cluster_provisioning_script_url = upload_blob(bucket_name, os.path.abspath(f"bin/cluster-provisioning/{cluster_provisioning_script}"), cluster_provisioning_script)
+
+    return cluster_provisioning_script_url

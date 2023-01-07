@@ -1,8 +1,8 @@
 import argparse
 import yaml
-from types import Cluster
+from entities.cluster import Cluster
 # Parse arguments 
-def parse_cluster_args() -> argparse.Namespace:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Couchbase cluster setup over GCP')
     # yaml file
     parser.add_argument('--yaml-file', dest='yaml_file', help='name of the yaml file with cluster definition')
@@ -33,7 +33,7 @@ def parse_cluster_args() -> argparse.Namespace:
 
 # Parse cluster arguments from yaml file
 
-def parse_from_yaml(self, yaml_file: str):
+def parse_from_yaml(yaml_file: str):
     # read the yaml file
     with open(yaml_file, 'r') as stream:
         try:
@@ -64,9 +64,13 @@ def parse_from_yaml(self, yaml_file: str):
     cluster_username = data['cluster_username']
     cluster_password = data['cluster_password']
 
-    return Cluster(cluster_name, cluster_size, machine_type, disk_size, disk_type, image_project, image_family, bucket, cluster_username, cluster_password)
+    return Cluster(cluster_name, cluster_size, bucket, machine_type, disk_size, disk_type, image_project, image_family, cluster_username, cluster_password)
 
-
+def required_error_msg(arg):
+    command_msg = '''usage: main.py [-h] --yaml-file YAML_FILE [--cluster-name CLUSTER_NAME] [--cluster-size CLUSTER_SIZE] [--bucket BUCKET] [--machine-type MACHINE_TYPE] [--disk-size DISK_SIZE]
+[--disk-type DISK_TYPE] [--image-project IMAGE_PROJECT] [--image-family IMAGE_FAMILY] [ --cluster-username CLUSTER_USERNAME] [--cluster-password CLUSTER_PASSWORD]
+        '''
+    print(f"{command_msg}\nmain.py: error: the following arguments are required: --{'-'.join(arg.split('_'))}")
 
 # Create cluster object from arguments
 def cluster_from_args(args: argparse.Namespace) -> Cluster:
@@ -87,8 +91,3 @@ def cluster_from_args(args: argparse.Namespace) -> Cluster:
 
 
 
-    def required_error_msg(self, arg):
-        command_msg = '''usage: main.py [-h] --yaml-file YAML_FILE [--cluster-name CLUSTER_NAME] [--cluster-size CLUSTER_SIZE] [--bucket BUCKET] [--machine-type MACHINE_TYPE] [--disk-size DISK_SIZE]
-    [--disk-type DISK_TYPE] [--image-project IMAGE_PROJECT] [--image-family IMAGE_FAMILY] [ --cluster-username CLUSTER_USERNAME] [--cluster-password CLUSTER_PASSWORD]
-            '''
-        print(f"{command_msg}\nmain.py: error: the following arguments are required: --{'-'.join(arg.split('_'))}")

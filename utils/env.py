@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os 
+from entities.gcp_project import GCPProject
 
 # check environment variables 
 def check_env():
