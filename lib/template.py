@@ -1,7 +1,7 @@
 from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, disk_from_image
 from typing import Iterable
-import json
+from lib.kms import create_key_ring, create_key_symmetric_encrypt_decrypt
 import os
 
 def create_template(
@@ -24,9 +24,19 @@ def create_template(
     Returns:
         InstanceTemplate object that represents the new instance template.
     """
+
+
+    # Create KMS key ring and symmetric encryption/decryption key
+    key_ring_id = f"key-ring-{template_name.replace('template-', '')}"
+    key_ring = create_key_ring(project_id, "global", key_ring_id)
+    key_id = f"key-{template_name.replace('template-', '')}"
+    key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id)
+    
+
+    
+    
     # get disk from image
-    #disk_type_name = f"zones/{zone}/diskTypes/{disk_type}"
-    disk = disk_from_image(disk_type, disk_size, disk_boot_auto, machine_image.self_link)
+    disk = disk_from_image(disk_type, disk_size, key, disk_boot_auto, machine_image.self_link)
     # Add google API support in the template so that it can be used inside the vm
 
 

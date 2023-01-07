@@ -1,5 +1,3 @@
-import argparse
-import yaml
 import uuid
 from utils.gcp import get_image_from_family
 from lib.storage import upload_startup_script
@@ -7,6 +5,7 @@ from lib.template import create_template
 from lib.firewall import create_firewall_rule, check_firewall_rule
 from lib.managed_instance import create_managed_instance_group
 from utils.couchbase import create_couchbase_cluster
+
 # Cluster class 
 class Cluster:
 
@@ -46,6 +45,7 @@ class Cluster:
             startup_script_url
         )
         
+
         #Create instance group
         create_managed_instance_group(project.project_id, project.zone, self.cluster_name, template.name, self.cluster_size)
         
