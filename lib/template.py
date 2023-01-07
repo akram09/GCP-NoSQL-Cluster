@@ -1,7 +1,7 @@
 from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, disk_from_image
 from typing import Iterable
-import json
+from lib.kms import create_key_ring, create_key_symmetric_encrypt_decrypt
 import os
 
 def create_template(
@@ -24,9 +24,19 @@ def create_template(
     Returns:
         InstanceTemplate object that represents the new instance template.
     """
+
+
+    # Create KMS key ring and symmetric encryption/decryption key
+    key_ring_id = f"key-ring-{template_name.replace('template-', '')}"
+    key_ring = create_key_ring(project_id, "global", key_ring_id)
+    key_id = f"key-{template_name.replace('template-', '')}"
+    key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id)
+    
+
+    
+    
     # get disk from image
-    #disk_type_name = f"zones/{zone}/diskTypes/{disk_type}"
-    disk = disk_from_image(disk_type, disk_size, disk_boot_auto, machine_image.self_link)
+    disk = disk_from_image(disk_type, disk_size, key, disk_boot_auto, machine_image.self_link)
     # Add google API support in the template so that it can be used inside the vm
 
 
@@ -34,13 +44,6 @@ def create_template(
     # without specifying a subnetwork.
     network_interface = compute_v1.NetworkInterface()
     network_interface.name = "global/networks/default"
-
-    # The template lets the instance use an external IP address.
-    access_config = compute_v1.AccessConfig()
-    access_config.name = "External NAT"
-    access_config.type_ = "ONE_TO_ONE_NAT"
-    access_config.network_tier = "PREMIUM"
-    network_interface.access_configs = [access_config]
 
     template = compute_v1.InstanceTemplate()
     template.name = template_name
@@ -56,7 +59,7 @@ def create_template(
     email = os.environ["COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL"]
     #set scopes in serviceaccounts
     service_account = compute_v1.ServiceAccount()
-    service_account.email = "153730055504-compute@developer.gserviceaccount.com"
+    service_account.email = email
     service_account.scopes = [
         "https://www.googleapis.com/auth/devstorage.read_only",
     ]
