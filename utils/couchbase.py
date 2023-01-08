@@ -17,7 +17,6 @@ def create_couchbase_cluster(project_id, nodes, bucket, cluster_username, cluste
         template = Template(f.read())
     # render the template 
     rendered_template = template.render(master_node_name=master_node_name, master_node_hostname=master_node_hostname, admin_username=cluster_username, admin_password=cluster_password, nodes=hostnames)
-    print(rendered_template)
     # write the rendered template to a file
     with open("./bin/cluster-provisioning/cluster-init.sh", "w") as f:
         f.write(rendered_template)

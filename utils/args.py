@@ -1,3 +1,4 @@
+from loguru import logger
 import argparse
 import yaml
 from entities.cluster import Cluster
@@ -36,22 +37,24 @@ def parse_args() -> argparse.Namespace:
 # Parse cluster arguments from yaml file
 
 def parse_from_yaml(yaml_file: str):
+    logger.info(f"Reading cluster definition from {yaml_file}")
     # read the yaml file
     with open(yaml_file, 'r') as stream:
         try:
             data = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
-            print(exc)
+            logger.error(exc)
+            exit(1)
             
     # verify if the yaml file has attributes: cluster_name, cluster_size, bucket
     if data['cluster_name'] == None:
-        print("cluster_name is not defined in the yaml file")
+        logger.error("Cluster name is missing from the yaml file")
         exit(0)
     if data['cluster_size'] == None:
-        print("cluster_size is not defined in the yaml file")
+        logger.error("Cluster size is missing from the yaml file")
         exit(0)
     if data['bucket'] == None:
-        print("bucket is not defined in the yaml file")
+        logger.error("Bucket is missing from the yaml file")
         exit(0)
    
     # creat a cluster object from the properties
@@ -78,19 +81,21 @@ def parse_from_yaml(yaml_file: str):
     if 'cluster_region' in data:
         cluster.cluster_region = data['cluster_region']
 
+    logger.info(f"Cluster definition: {cluster}")
     return cluster
 
 def required_error_msg(arg):
     command_msg = '''usage: main.py [-h] --yaml-file YAML_FILE [--cluster-name CLUSTER_NAME] [--cluster-size CLUSTER_SIZE] [--bucket BUCKET] [--machine-type MACHINE_TYPE] [--disk-size DISK_SIZE]
 [--disk-type DISK_TYPE] [--image-project IMAGE_PROJECT] [--image-family IMAGE_FAMILY] [ --cluster-username CLUSTER_USERNAME] [--cluster-password CLUSTER_PASSWORD]
         '''
-    print(f"{command_msg}\nmain.py: error: the following arguments are required: --{'-'.join(arg.split('_'))}")
+    logger.error(f"{command_msg}\nmain.py: error: the following arguments are required: --{'-'.join(arg.split('_'))}")
 
 # Create cluster object from arguments
 def cluster_from_args(args: argparse.Namespace) -> Cluster:
     if args.yaml_file != None:
         return parse_from_yaml(args.yaml_file)
     else:
+        logger.info("Creating cluster from arguments")
         if args.cluster_name == None:
             required_error_msg("cluster_name")
             exit(0)
@@ -99,8 +104,10 @@ def cluster_from_args(args: argparse.Namespace) -> Cluster:
             exit(0)
         if args.bucket == None:
             required_error_msg("bucket")
-            exit(0) 
-        return Cluster(args.cluster_name, args.cluster_size, args.machine_type, args.disk_size, args.disk_type, args.image_project, args.image_family, args.bucket, args.cluster_username, args.cluster_password, args.cluster_region)
+            exit(0)        
+        cluster = Cluster(args.cluster_name, args.cluster_size, args.machine_type, args.disk_size, args.disk_type, args.image_project, args.image_family, args.bucket, args.cluster_username, args.cluster_password, args.cluster_region)
+        logger.info(f"Cluster definition: {cluster}")
+        return cluster
 
 
 

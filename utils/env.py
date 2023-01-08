@@ -1,3 +1,4 @@
+from loguru import logger
 from dotenv import load_dotenv
 import os 
 from entities.gcp_project import GCPProject
@@ -15,10 +16,15 @@ def check_env():
 
 
 def load_project_env():
+    logger.info("Loading environment variables")
     # load environment variables from .env file
     load_dotenv()
     # check environment variables
-    check_env()
+    try:
+        check_env()
+    except Exception as e:
+        logger.error(e)
+        exit(1)
     # get environment variables
     project = os.environ.get("GOOGLE_CLOUD_PROJECT")
     zone = os.environ.get("GOOGLE_CLOUD_ZONE")

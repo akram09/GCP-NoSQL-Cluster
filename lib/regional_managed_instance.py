@@ -1,3 +1,4 @@
+from loguru import logger
 import time 
 from lib.template import get_instance_template
 from google.cloud import compute_v1
@@ -5,6 +6,7 @@ from utils.gcp import wait_for_extended_operation, get_image_from_family
 
 # create managed instance group 
 def create_region_managed_instance_group(project_id, region, instance_group_name, instance_template_name, instance_group_size):
+    logger.info(f"Creating managed instance group {instance_group_name}")
     # get instance template 
     instance_template = get_instance_template(project_id, instance_template_name)
     # create instance group manager client
@@ -16,31 +18,26 @@ def create_region_managed_instance_group(project_id, region, instance_group_name
         request=instance_group_manager_request
     )
     # wait for operation to complete
-    wait_for_extended_operation(operation, "instance group manager creation")
+    try:
+        wait_for_extended_operation(operation, project_id)
+    except Exception as e:
+        logger.error(f"Error creating managed instance group: {e}")
+        raise e
+    logger.success(f"Managed instance group {instance_group_name} created")
     # get instance group manager
     instance_group_manager = instance_group_manager_client.get(
         project=project_id, region=region, instance_group_manager=instance_group_name
-    )
-    # print instance group manager details
-    print(f"Instance group manager {instance_group_name} created.")
-    print(f"Instance template: {instance_template.name}")
-    print(f"Instance template self link: {instance_template.self_link}")
-    print(f"Instance group manager self link: {instance_group_manager.self_link}")
-    print(f"Instance group manager target size: {instance_group_manager.target_size}")
-    print(f"Instance group manager instance template: {instance_group_manager.instance_template}")
-    print(f"Instance group manager base instance name: {instance_group_manager.base_instance_name}")
-    print(f"Instance group manager status: {instance_group_manager.status}")
-    
+    )    
     # wait till the instance group manager is stable 
     while not instance_group_manager.status.is_stable:
-        print("Waiting for instance group manager to be stable")
+        logger.debug(f"Waiting for instance group manager {instance_group_name} to be stable")
         time.sleep(5)
         instance_group_manager = instance_group_manager_client.get(
             project=project_id, region=region, instance_group_manager=instance_group_name
         )
-    print("Instance group manager is stable")
+    logger.debug(f"Instance group manager {instance_group_name} is stable")
     # witing for instances to be provisioned
-    print("Waiting for instances to be provisioned")
+    logger.debug(f"Waiting for instances to be provisioned")
     time.sleep(60)
     # return instance group manager
     return instance_group_manager
@@ -86,8 +83,6 @@ def create_region_managed_instance_group_request(project_id, region, instance_gr
     distribution_policy = compute_v1.DistributionPolicy()
     
     # set target shape 
-    print(f"target shape of distribution policy: ANY'")
-    print("When the target shape is ANY, the group manager will create instances across all available zones that respect the resource constraints.")
     distribution_policy.target_shape = "BALANCED"
 
     instance_group_manager_request.instance_group_manager_resource = compute_v1.InstanceGroupManager(
@@ -101,6 +96,10 @@ def create_region_managed_instance_group_request(project_id, region, instance_gr
                 disks=
                     {
                         "persistent-disk-0" : 
+                            compute_v1.StatefulPolicyPreservedStateDiskDevice(
+                                auto_delete="never"
+                            ),
+                        "persistent-disk-1" : 
                             compute_v1.StatefulPolicyPreservedStateDiskDevice(
                                 auto_delete="never"
                             )

@@ -1,3 +1,4 @@
+from loguru import logger
 from google.cloud import kms
 
 def create_key_ring(project_id, location_id, key_ring_id):
@@ -10,9 +11,7 @@ def create_key_ring(project_id, location_id, key_ring_id):
     Returns:
         KeyRing: Cloud KMS key ring.
     """
-
-    
-
+    logger.info(f"Creating key ring {key_ring_id}  in project {project_id}")
     # Create the client.
     client = kms.KeyManagementServiceClient()
 
@@ -25,8 +24,37 @@ def create_key_ring(project_id, location_id, key_ring_id):
     # Call the API.
     created_key_ring = client.create_key_ring(
         request={'parent': location_name, 'key_ring_id': key_ring_id, 'key_ring': key_ring})
-    print('Created key ring: {}'.format(created_key_ring.name))
+    logger.success(f"Created key ring {created_key_ring.name}")
     return created_key_ring
+
+
+# get key ring 
+def get_key_ring(project_id, location_id, key_ring_id):
+    """
+    Gets a key ring from Cloud KMS.
+    Args:
+        project_id (string): Google Cloud project ID (e.g. 'my-project').
+        location_id (string): Cloud KMS location (e.g. 'us-east1').
+        key_ring_id (string): ID of the Cloud KMS key ring (e.g. 'my-key-ring').
+    Returns:
+        KeyRing: Cloud KMS key
+    """
+    logger.info(f"Getting key ring {key_ring_id} in project {project_id}")
+    # Create the client 
+    client = kms.KeyManagementServiceClient()
+
+    # Build the key ring name
+    key_ring_name = client.key_ring_path(project_id, location_id, key_ring_id)
+
+    # Call the API
+    try:
+        key_ring = client.get_key_ring(name=key_ring_name)
+        logger.success(f"Got key ring {key_ring.name}")
+        return key_ring
+    except Exception as e:
+        logger.error(f"Error getting key ring {key_ring_id} in project {project_id}")
+        return None
+
 
 
 def create_key_symmetric_encrypt_decrypt(project_id, location_id, key_ring_id, key_id):
@@ -63,5 +91,32 @@ def create_key_symmetric_encrypt_decrypt(project_id, location_id, key_ring_id, k
     # Call the API.
     created_key = client.create_crypto_key(
         request={'parent': key_ring_name, 'crypto_key_id': key_id, 'crypto_key': key})
-    print('Created symmetric key: {}'.format(created_key.name))
     return created_key
+
+# get key by key ring id and key id 
+def get_key_symmetric_encrypt_decrypt(project_id, location_id, key_ring_id, key_id):
+    """
+    Gets a symmetric encryption/decryption key from Cloud KMS.
+    Args:
+        project_id (string): Google Cloud project ID (e.g. 'my-project').
+        location_id (string): Cloud KMS location (e.g. 'us-east1').
+        key_ring_id (string): ID of the Cloud KMS key ring (e.g. 'my-key-ring').
+        key_id (string): ID of the key to get (e.g. 'my-symmetric-key').
+    Returns:
+        CryptoKey: Cloud KMS key.
+    """
+    logger.info(f"Getting key {key_id} in key ring {key_ring_id} in project {project_id}")
+    # Create the client.
+    client = kms.KeyManagementServiceClient()
+
+    # Build the key name.
+    key_name = client.crypto_key_path(project_id, location_id, key_ring_id, key_id)
+
+    # Call the API.
+    try:
+        key = client.get_crypto_key(name=key_name)
+        logger.success(f"Got key {key.name}")
+        return key
+    except Exception as e:
+        logger.error(f"Error getting key {key_id} in key ring {key_ring_id} in project {project_id}")
+        return None

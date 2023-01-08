@@ -1,8 +1,9 @@
+from loguru import logger
 import uuid
 from utils.gcp import get_image_from_family
 from lib.storage import upload_startup_script
 from lib.vm_instance import get_instances_from_managed_instances
-from lib.template import create_template
+from lib.template import create_template, get_instance_template
 from lib.firewall import create_firewall_rule, check_firewall_rule
 from lib.managed_instance import create_managed_instance_group, list_instances
 from lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances
@@ -26,8 +27,9 @@ class Cluster:
     
     # deploy cluster on gcp 
     def deploy_cluster_gcp(self, project): 
+        logger.info(f"Deploying cluster {self.cluster_name} on GCP ...")
         #Create instance templace
-        template_name = f"template-{uuid.uuid4()}"
+        template_name = f"template-{self.cluster_name}"
 
         #Get the machine image from the project and family
         machine_image = get_image_from_family(self.image_project, self.image_family)
@@ -35,32 +37,42 @@ class Cluster:
 
         # upload the startup script to the bucket
         startup_script_url = upload_startup_script(self.image_family, self.bucket)
-        
-        # create instance template
-        template = create_template(
-            project.project_id,
-            project.zone,
-            template_name,
-            self.machine_type,
-            machine_image,
-            self.disk_type,
-            self.disk_size,
-            startup_script_url
-        )
+
+        template = get_instance_template(project.project_id, template_name)
+        # check if there is a template existing 
+        if template is None: 
+            logger.info(f"Instance template {template_name} does not exist, creating ...")
+            # create instance template
+            template = create_template(
+                project.project_id,
+                project.zone,
+                template_name,
+                self.machine_type,
+                machine_image,
+                self.disk_type,
+                self.disk_size,
+                startup_script_url
+            )
+        else:
+            logger.debug(f"Instance template {template_name} already exists")
         
         # if the cluster region is specified then create regional managed instance 
         if self.cluster_region != None:
+            logger.debug(f"Creating regional managed instance group {self.cluster_name}")
             create_region_managed_instance_group(project.project_id, self.cluster_region, self.cluster_name, template.name, self.cluster_size)
         else: 
+            logger.debug(f"Creating zone managed instance group {self.cluster_name}")
             #Create instance group
             create_managed_instance_group(project.project_id, self.cluster_region, self.cluster_name, template.name, self.cluster_size)
         
+        logger.info("Checking firewall rules")
         # Check if the firewall rule exists
         if check_firewall_rule(project.project_id, self.cluster_name+"-firewall"):
-            print("Firewall rule exists")
+            logger.debug(f"Firewall rule {self.cluster_name}-firewall already exists")
         else:
-            print("Firewall rule does not exist")
+            logger.debug(f"Creating firewall rule {self.cluster_name}-firewall")
             create_firewall_rule(project.project_id, self.cluster_name+"-firewall")
+            logger.success(f"Firewall rule {self.cluster_name}-firewall created")
 
         # get the managed instances  
         if self.cluster_region != None:
@@ -69,8 +81,10 @@ class Cluster:
             managed_instances = list_instances(project.project_id, project.zone, self.cluster_name)
         # map managed instances to compute instances
         nodes = get_instances_from_managed_instances(project.project_id, managed_instances)
+        logger.debug("Initializing the couchbase cluster creation process")
         # Create a cluster from the instance group 
         create_couchbase_cluster(project.project_id, nodes, self.bucket, self.cluster_username, self.cluster_password)
+        logger.success(f"Cluster {self.cluster_name} created successfully")
 
 
     # print cluster details

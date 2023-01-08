@@ -1,3 +1,4 @@
+from loguru import logger
 from google.cloud import compute_v1
 from google.cloud import kms_v1
 from google.api_core.extended_operation import ExtendedOperation
@@ -34,18 +35,16 @@ def wait_for_extended_operation(
     result = operation.result(timeout=timeout)
 
     if operation.error_code:
-        print(
-            f"Error during {verbose_name}: [Code: {operation.error_code}]: {operation.error_message}",
-            file=sys.stderr,
-            flush=True,
+        logger.error(
+            f"Error during {verbose_name} {operation.name}: {operation.error_message}"
         )
-        print(f"Operation ID: {operation.name}", file=sys.stderr, flush=True)
+        logger.error(f"Operation ID: {operation.name}")
         raise operation.exception() or RuntimeError(operation.error_message)
 
     if operation.warnings:
-        print(f"Warnings during {verbose_name}:\n", file=sys.stderr, flush=True)
+        logger.warning(f"Warnings during {verbose_name} {operation.name}:")
         for warning in operation.warnings:
-            print(f" - {warning.code}: {warning.message}", file=sys.stderr, flush=True)
+            logger.warning(f" - {warning.code}: {warning.message}")
 
     return result
 
@@ -93,10 +92,15 @@ def get_image_from_family(project: str, family: str) -> compute_v1.Image:
     Returns:
         An Image object.
     """
+    logger.info(f"Getting image from family {family} in project {project}")
     image_client = compute_v1.ImagesClient()
     # List of public operating system (OS) images: https://cloud.google.com/compute/docs/images/os-details
-    newest_image = image_client.get_from_family(project=project, family=family)
-    return newest_image
+    try:
+        newest_image = image_client.get_from_family(project=project, family=family)
+        return newest_image
+    except Exception as e:
+        logger.error(f"Error getting image from family {family}: {e}")
+        raise e
 
 
 def disk_from_image(

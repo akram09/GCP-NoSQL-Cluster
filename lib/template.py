@@ -1,7 +1,8 @@
+from loguru import logger
 from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, disk_from_image
 from typing import Iterable
-from lib.kms import create_key_ring, create_key_symmetric_encrypt_decrypt
+from lib.kms import create_key_ring, create_key_symmetric_encrypt_decrypt, get_key_ring, get_key_symmetric_encrypt_decrypt
 import os
 
 def create_template(
@@ -24,16 +25,26 @@ def create_template(
     Returns:
         InstanceTemplate object that represents the new instance template.
     """
-
-
+    logger.info("Creating instance template...")
     # Create KMS key ring and symmetric encryption/decryption key
-    key_ring_id = f"key-ring-{template_name.replace('template-', '')}"
-    key_ring = create_key_ring(project_id, "global", key_ring_id)
+    key_ring_id = f"key-ring-{template_name.replace('template-', '')}" 
+    logger.info("Checking key ring ...")
+    # check if key ring exists 
+    key_ring = get_key_ring(project_id, "global", key_ring_id)
+    if key_ring is None: 
+        logger.debug("Key ring does not exist, creating key ring")
+        key_ring = create_key_ring(project_id, "global", key_ring_id)
+
+    logger.info("Checking encryption key ...")
     key_id = f"key-{template_name.replace('template-', '')}"
-    key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id) 
+    key = get_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id)
+    if key is None:
+        logger.debug("Encryption key does not exist, creating encryption key")
+        key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id)
     
     # get disk from image
     disk = disk_from_image(disk_type, disk_size, key, disk_boot_auto, machine_image.self_link)
+    extra_disk = disk_from_image(disk_type, disk_size, key, False, machine_image.self_link)
     # Add google API support in the template so that it can be used inside the vm
 
 
@@ -48,7 +59,7 @@ def create_template(
     tags = compute_v1.Tags()
     tags.items = ["couchbase-server"]
     template.properties.tags = tags 
-    template.properties.disks = [disk]
+    template.properties.disks = [disk, extra_disk]
     template.properties.machine_type = machine_type
     template.properties.network_interfaces = [network_interface]
 
@@ -61,7 +72,6 @@ def create_template(
         "https://www.googleapis.com/auth/devstorage.read_only",
     ]
     template.properties.service_accounts = [service_account]
-    print(service_account)
     # set the startup script url in the metadata
     metadata = compute_v1.Metadata()
     metadata.items = [
@@ -79,6 +89,7 @@ def create_template(
     )
 
     wait_for_extended_operation(operation, "instance template creation")
+    logger.success("Instance template created!")
 
     return template_client.get(project=project_id, instance_template=template_name)
 
@@ -95,8 +106,14 @@ def get_instance_template(
     Returns:
         InstanceTemplate object that represents the retrieved template.
     """
+    logger.info("Retrieving instance template...")
     template_client = compute_v1.InstanceTemplatesClient()
-    return template_client.get(project=project_id, instance_template=template_name)
+    # try to get template by name if an exception of 404 
+    # if thrown then return None
+    try:
+        return template_client.get(project=project_id, instance_template=template_name)
+    except:
+        return None
 
 
 def list_instance_templates(project_id: str) -> Iterable[compute_v1.InstanceTemplate]:

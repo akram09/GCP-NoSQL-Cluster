@@ -1,3 +1,4 @@
+from loguru import logger
 from google.cloud import storage
 import os
 from jinja2 import Template
@@ -8,7 +9,9 @@ def create_bucket(bucket_name):
     bucket = storage_client.bucket(bucket_name)
     if not bucket.exists():
         bucket = storage_client.create_bucket(bucket_name)
-        print(f"Bucket {bucket.name} created.")
+        logger.info(f"Bucket {bucket.name} created.")
+    else:
+        logger.info(f"Bucket {bucket.name} exists.")
     return bucket
 
 
@@ -38,19 +41,15 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
     # bucket_name = "your-bucket-name"
     # source_file_name = "local/path/to/file"
     # destination_blob_name = "storage-object-name"
+    logger.info(f"Uploading {source_file_name} to {bucket_name} bucket...")
 
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
 
     blob.upload_from_filename(source_file_name)
-
-    print(
-        "File {} uploaded to {}.".format(
-            source_file_name, destination_blob_name
-        )
-    )
     
+    logger.success(f"File {source_file_name} uploaded to {destination_blob_name}.") 
     # generate public link for the uploaded file
     return blob.public_url
 
@@ -89,6 +88,7 @@ def list_blobs(bucket_name):
 
 def upload_startup_script(image_family: str, bucket_name: str):
     """Uploads the selected startup script base on image family, to the created bucket if not existing and return the startup script url."""
+    logger.info(f"Uploading startup script for {image_family} image family...")
     
     # Selecting startup script based on the OS family
     dist = image_family.split('-')[0]
@@ -102,11 +102,14 @@ def upload_startup_script(image_family: str, bucket_name: str):
         startup_script = "startup-script-suse.sh"
         script_template = "startup-script-suse.j2"
     else:
+        logger.error(f"Unsupported OS family: {dist}")
         raise("There is no startup script for the selected OS family.")
 
+    logger.info("Checking if the bucket exists else creating the bucket...")
     # Create the bucket if not existed
     bucket = create_bucket(bucket_name)
-    
+
+    logger.info("Assigning read storage role to the bucket...") 
     # Add Compute Engine default service account to the bucket
     # read member from environment variable
     member = {"user": os.environ['COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL']}
@@ -117,8 +120,7 @@ def upload_startup_script(image_family: str, bucket_name: str):
     policy.bindings.append({"role": role, "members": [member]})
 
     bucket.set_iam_policy(policy)
-
-    print(f"Added {member} with role {role} to {bucket_name}.")
+    logger.debug(f"Added {member} to {bucket.name} with {role} role.")
 
     # read the template 
     with open(f"./bin/couchbase-install/{script_template}", "r") as f:
