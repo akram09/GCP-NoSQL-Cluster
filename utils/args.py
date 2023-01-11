@@ -21,6 +21,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--disk-size', dest='disk_size', help='Disk size for the cluster')
     # disk type with default value
     parser.add_argument('--disk-type', dest='disk_type', help='Disk type for the cluster')
+    # extra disk tyoe 
+    parser.add_argument('--extra-disk-type', dest='extra_disk_type', help='Extra disk type')
+    # extra disk size
+    parser.add_argument('--extra-disk-size', dest='extra_disk_size', help='Extra disk size')
     # machine image project with default value 
     parser.add_argument('--image-project', dest='image_project', help='Machine image project for the cluster')
     # machine image family with default value 
@@ -70,6 +74,10 @@ def parse_from_yaml(yaml_file: str):
         cluster.disk_size = data['disk_size']
     if 'disk_type' in data:
         cluster.disk_type = data['disk_type']
+    if 'extra_disk_type' in data:
+        cluster.extra_disk_type = data['extra_disk_type']
+    if 'extra_disk_size' in data:
+        cluster.extra_disk_size = data['extra_disk_size']
     if 'image_project' in data:
         cluster.image_project = data['image_project']
     if 'image_family' in data:
@@ -105,7 +113,7 @@ def cluster_from_args(args: argparse.Namespace) -> Cluster:
         if args.bucket == None:
             required_error_msg("bucket")
             exit(0)        
-        cluster = Cluster(args.cluster_name, args.cluster_size, args.machine_type, args.disk_size, args.disk_type, args.image_project, args.image_family, args.bucket, args.cluster_username, args.cluster_password, args.cluster_region)
+        cluster = Cluster(args.cluster_name, args.cluster_size, args.machine_type, args.disk_size, args.disk_type,args.extra_disk_type, args.extra_disk_size, args.image_project, args.image_family, args.bucket, args.cluster_username, args.cluster_password, args.cluster_region)
         logger.info(f"Cluster definition: {cluster}")
         return cluster
 

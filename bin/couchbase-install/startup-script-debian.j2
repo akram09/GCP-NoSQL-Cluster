@@ -17,14 +17,22 @@ sudo apt-get install -y couchbase-server-community
 # remove the meta package
 rm couchbase-release-1.0-amd64.deb
 
-# Wait 3 minutes for couchbase server to start
-sleep 180
+# Init a couchbase cluster 
 
-# Pull the cluster init script from gcp bucket 
-gsutil cp gs://{{ bucket_name }}/cluster-provisioning/cluster-init.sh .
 
-# Change the permission of the script
-chmod +x cluster-init.sh
+# check if we are in the master node based on the hostname -a  
+# if we are in the master node, we will init the cluster
+if [[ $(hostname -a) == {{ master_node_name }} ]]; then
+    echo "Init the cluster" 
+    /opt/couchbase/bin/couchbase-cli cluster-init -c {{ master_node_hostname }}:8091 --cluster-username={{ admin_username }} --cluster-password={{admin_password}} 
+    
+    # add the other nodes to the cluster
 
-# Run the script
-./cluster-init.sh
+    {% for node in nodes %}
+      # Add nodes
+    /opt/couchbase/bin/couchbase-cli server-add -c {{ master_node_hostname }}:8091 --server-add={{ node }}:8091 --server-add-username={{ admin_username }} --server-add-password={{ admin_password }} --username={{ admin_username }} --password={{ admin_password }}
+
+    {% endfor %}
+    # Rebalance
+    /opt/couchbase/bin/couchbase-cli rebalance -c {{ master_node_hostname }}:8091 -u {{ admin_username }} -p {{ admin_password }}
+fi

@@ -5,14 +5,14 @@ from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, get_image_from_family
 
 # create managed instance group 
-def create_region_managed_instance_group(project_id, region, instance_group_name, instance_template_name, instance_group_size):
-    logger.info(f"Creating managed instance group {instance_group_name}")
+def create_region_managed_instance_group(project_id, region, instance_group_name, instance_template_name):
+    logger.info(f"Creating managed instance group {instance_group_name} with zero instances")
     # get instance template 
     instance_template = get_instance_template(project_id, instance_template_name)
     # create instance group manager client
     instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
     # create instance group manager request
-    instance_group_manager_request = create_region_managed_instance_group_request(project_id, region, instance_group_name, instance_template, instance_group_size)
+    instance_group_manager_request = create_region_managed_instance_group_request(project_id, region, instance_group_name, instance_template, 0)
     # create instance group manager
     operation = instance_group_manager_client.insert(
         request=instance_group_manager_request
@@ -24,6 +24,7 @@ def create_region_managed_instance_group(project_id, region, instance_group_name
         logger.error(f"Error creating managed instance group: {e}")
         raise e
     logger.success(f"Managed instance group {instance_group_name} created")
+
     # get instance group manager
     instance_group_manager = instance_group_manager_client.get(
         project=project_id, region=region, instance_group_manager=instance_group_name
@@ -36,12 +37,61 @@ def create_region_managed_instance_group(project_id, region, instance_group_name
             project=project_id, region=region, instance_group_manager=instance_group_name
         )
     logger.debug(f"Instance group manager {instance_group_name} is stable")
-    # witing for instances to be provisioned
-    logger.debug(f"Waiting for instances to be provisioned")
-    time.sleep(60)
     # return instance group manager
     return instance_group_manager
 
+
+def get_region_managed_instance_group(project_id, region, instance_group_name):
+    logger.info("Checking if the managed instance group exists ...")
+    # create instance group manager client
+    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
+    # get instance group manager
+    try:
+        instance_group_manager = instance_group_manager_client.get(
+            project=project_id, region=region, instance_group_manager=instance_group_name
+        )
+        logger.debug("Managed instance group exists")
+        return instance_group_manager
+    except Exception as e:
+        logger.debug("Managed instance group does not exist")
+        return None
+
+
+# adding custom instances to the managed instance group 
+def region_adding_instances(
+    project_id, region, instance_group_manager, size
+    ):
+    logger.debug(f"Adding {size} instances to the managed instance group {instance_group_manager.name}")
+    # get client 
+    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
+    # create an instance group managers create instance request
+    create_instance_request = compute_v1.CreateInstancesRegionInstanceGroupManagerRequest(
+        project=project_id,
+        region=region,
+        instance_group_manager=instance_group_manager.name,
+        region_instance_group_managers_create_instances_request_resource={
+            "instances": [
+                {
+                    # format the name to 3 digits 
+                    "name": f"{instance_group_manager.name}-{instance_range:03d}"
+                }
+                for instance_range in range(size)
+            ]
+        },
+    )
+    # create instances 
+    operation = instance_group_manager_client.create_instances(
+        request=create_instance_request
+    )
+    # wait for operation to complete
+    try:
+        wait_for_extended_operation(operation, project_id)
+    except Exception as e:
+        logger.error(f"Error creating instances: {e}")
+        raise e
+    logger.success(f"Instances created")
+
+    
 
 
 # list instances of an instance group manager
@@ -110,6 +160,7 @@ def create_region_managed_instance_group_request(project_id, region, instance_gr
         distribution_policy=distribution_policy,
         # set update policy 
         update_policy=compute_v1.InstanceGroupManagerUpdatePolicy(
+            type="OPPORTUNISTIC",
             instance_redistribution_type="NONE",
         ),
 

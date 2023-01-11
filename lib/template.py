@@ -1,8 +1,9 @@
+import uuid
 from loguru import logger
 from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, disk_from_image
 from typing import Iterable
-from lib.kms import create_key_ring, create_key_symmetric_encrypt_decrypt, get_key_ring, get_key_symmetric_encrypt_decrypt
+from lib.kms import create_key_ring, create_key_symmetric_encrypt_decrypt, get_key_ring, get_key_symmetric_encrypt_decrypt, is_key_enabled
 import os
 
 def create_template(
@@ -13,8 +14,9 @@ def create_template(
     machine_image: compute_v1.types.compute.Image,
     disk_type: str,
     disk_size: int,
+    extra_disk_type: str,
+    extra_disk_size: int,
     startup_script_url: str,
-    disk_boot_auto: bool = True
     ):
     """
     Create a new instance template with the provided name and a specific
@@ -37,14 +39,10 @@ def create_template(
 
     logger.info("Checking encryption key ...")
     key_id = f"key-{template_name.replace('template-', '')}"
-    key = get_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id)
-    if key is None:
-        logger.debug("Encryption key does not exist, creating encryption key")
-        key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id)
-    
+    key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id+f"-{uuid.uuid4().hex}")
     # get disk from image
-    disk = disk_from_image(disk_type, disk_size, key, disk_boot_auto, machine_image.self_link)
-    extra_disk = disk_from_image(disk_type, disk_size, key, False, machine_image.self_link)
+    disk = disk_from_image(disk_type, disk_size, key, True, machine_image.self_link)
+    extra_disk = disk_from_image(extra_disk_type, extra_disk_size, key, False, machine_image.self_link)
     # Add google API support in the template so that it can be used inside the vm
 
 
@@ -52,6 +50,14 @@ def create_template(
     # without specifying a subnetwork.
     network_interface = compute_v1.NetworkInterface()
     network_interface.name = "global/networks/default"
+
+    # This template has a public ip 
+    access_config = compute_v1.AccessConfig()
+    access_config.name = "External NAT"
+    access_config.type_ = "ONE_TO_ONE_NAT"
+    access_config.network_tier = "PREMIUM"
+    network_interface.access_configs = [access_config]
+
 
     template = compute_v1.InstanceTemplate()
     template.name = template_name
@@ -92,6 +98,87 @@ def create_template(
     logger.success("Instance template created!")
 
     return template_client.get(project=project_id, instance_template=template_name)
+
+
+
+
+# update template 
+def update_template(
+    project_id: str,
+    template: compute_v1.InstanceTemplate,
+    zone: str,
+    machine_type: str,
+    machine_image: compute_v1.types.compute.Image,
+    disk_type: str,
+    disk_size: int,
+    extra_disk_type: str, 
+    extra_disk_size: int, 
+    startup_script_url: str
+    ) -> compute_v1.InstanceTemplate:
+
+    logger.info(f"Updating instance template {template.name}...")
+    logger.info(f"Because gcp doesn't support updating an instance template we will delete the first and create new one with updated values")
+    
+
+    template_client = compute_v1.InstanceTemplatesClient()
+    # delete the old template 
+    operation = template_client.delete(project=project_id, instance_template=template.name)
+    try:
+        wait_for_extended_operation(operation, "deleting old instance template")
+    except:
+        logger.debug("The template is being used by a mig")
+        return template
+    # check disks 
+    disks = template.properties.disks
+    boot_disk = disks[0]
+    extra_disk = disks[1]
+
+    # check the boot disk properties 
+    if boot_disk.initialize_params.source_image != machine_image.self_link:
+        logger.debug("Boot disk image is different, updating boot disk image")
+        boot_disk.initialize_params.source_image = machine_image.self_link
+    if boot_disk.initialize_params.disk_size_gb != disk_size:
+        logger.debug("Boot disk size is different, updating boot disk size")
+        boot_disk.initialize_params.disk_size_gb = disk_size
+    if boot_disk.initialize_params.disk_type != disk_type:
+        logger.debug("Boot disk type is different, updating boot disk type") 
+        boot_disk.initialize_params.disk_type = disk_type
+
+    # check the extra disk properties
+    if extra_disk.initialize_params.source_image != machine_image.self_link:
+        logger.debug("Extra disk image is different, updating extra disk image")
+        extra_disk.initialize_params.source_image = machine_image.self_link
+    if extra_disk.initialize_params.disk_size_gb != extra_disk_size:
+        logger.debug("Extra disk size is different, updating extra disk size")
+        extra_disk.initialize_params.disk_size_gb = extra_disk_size
+    if extra_disk.initialize_params.disk_type != extra_disk_type:
+        logger.debug("Extra disk type is different, updating extra disk type")
+        extra_disk.initialize_params.disk_type = extra_disk_type
+
+    # check the machine type
+    if template.properties.machine_type != machine_type:
+        logger.debug("Machine type is different, updating machine type")
+        template.properties.machine_type = machine_type
+
+    # check the startup script url
+    if template.properties.metadata.items[0].value != startup_script_url:
+        logger.debug("Startup script url is different, updating startup script url")
+        template.properties.metadata.items[0].value = startup_script_url
+
+    # send the update request
+
+
+    # create the new template
+    operation = template_client.insert(
+        project=project_id, instance_template_resource=template
+    )
+
+    wait_for_extended_operation(operation, "instance template update") 
+    logger.success("Instance template updated!")
+
+    
+    return template_client.get(project=project_id, instance_template=template.name)
+    
 
 
 def get_instance_template(

@@ -86,7 +86,7 @@ def list_blobs(bucket_name):
         print(blob.name)
 
 
-def upload_startup_script(image_family: str, bucket_name: str):
+def upload_startup_script(project_id: str, image_family: str, bucket_name: str, cluster_username: str, cluster_password: str, cluster_name: str, cluster_size: int):
     """Uploads the selected startup script base on image family, to the created bucket if not existing and return the startup script url."""
     logger.info(f"Uploading startup script for {image_family} image family...")
     
@@ -125,8 +125,19 @@ def upload_startup_script(image_family: str, bucket_name: str):
     # read the template 
     with open(f"./bin/couchbase-install/{script_template}", "r") as f:
         template = Template(f.read())
+
+
+    nodes = [f"{cluster_name}-{instance_range:03d}" for instance_range in range(cluster_size)] 
+    master_node_name = nodes[0]
+    # map nodes list to hostnames list  using gcp internal dns
+    hostnames = list(map(lambda node: node + ".c." + project_id + ".internal", nodes))
+    # get the master node hostname
+    master_node_hostname = hostnames[0]
+    # remove the master node from the list 
+    hostnames.pop(0)
     # render the template 
-    rendered_template = template.render(bucket_name=bucket_name)
+    rendered_template = template.render(master_node_name=master_node_name, master_node_hostname=master_node_hostname, admin_username=cluster_username, admin_password=cluster_password, nodes=hostnames)
+    print(rendered_template)
     # write the rendered template to a file
     with open(f"./bin/couchbase-install/{startup_script}", "w") as f:
         f.write(rendered_template)

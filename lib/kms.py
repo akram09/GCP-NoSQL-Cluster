@@ -120,3 +120,8 @@ def get_key_symmetric_encrypt_decrypt(project_id, location_id, key_ring_id, key_
     except Exception as e:
         logger.error(f"Error getting key {key_id} in key ring {key_ring_id} in project {project_id}")
         return None
+
+
+def is_key_enabled(key):
+    # check if the key is enabled 
+    return key.primary.state == kms.CryptoKeyVersion.CryptoKeyVersionState.ENABLED

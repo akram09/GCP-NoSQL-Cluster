@@ -17,14 +17,30 @@ sudo apt-get install -y couchbase-server-community
 # remove the meta package
 rm couchbase-release-1.0-amd64.deb
 
-# Wait 3 minutes for couchbase server to start
-sleep 180
+# Init a couchbase cluster 
 
-# Pull the cluster init script from gcp bucket 
-gsutil cp gs://bucket-7972cfbe-3da3-4f7f-a1fa-770a13c853eb/cluster-provisioning/cluster-init.sh .
 
-# Change the permission of the script
-chmod +x cluster-init.sh
+# check if we are in the master node based on the hostname -a  
+# if we are in the master node, we will init the cluster
+if [[ $(hostname -a) == mig-7-000 ]]; then
+    echo "Init the cluster" 
+    /opt/couchbase/bin/couchbase-cli cluster-init -c mig-7-000.c.upwork-python-automation.internal:8091 --cluster-username=m0kr4n3 --cluster-password=password 
+    
+    # add the other nodes to the cluster
 
-# Run the script
-./cluster-init.sh
+    
+      # Add nodes
+    /opt/couchbase/bin/couchbase-cli server-add -c mig-7-000.c.upwork-python-automation.internal:8091 --server-add=mig-7-001.c.upwork-python-automation.internal:8091 --server-add-username=m0kr4n3 --server-add-password=password --username=m0kr4n3 --password=password
+
+    
+      # Add nodes
+    /opt/couchbase/bin/couchbase-cli server-add -c mig-7-000.c.upwork-python-automation.internal:8091 --server-add=mig-7-002.c.upwork-python-automation.internal:8091 --server-add-username=m0kr4n3 --server-add-password=password --username=m0kr4n3 --password=password
+
+    
+      # Add nodes
+    /opt/couchbase/bin/couchbase-cli server-add -c mig-7-000.c.upwork-python-automation.internal:8091 --server-add=mig-7-003.c.upwork-python-automation.internal:8091 --server-add-username=m0kr4n3 --server-add-password=password --username=m0kr4n3 --password=password
+
+    
+    # Rebalance
+    /opt/couchbase/bin/couchbase-cli rebalance -c mig-7-000.c.upwork-python-automation.internal:8091 -u m0kr4n3 -p password
+fi
