@@ -1,11 +1,17 @@
-cluster_region: europe-west9
-cluster_name: mig-7
-cluster_size: 2
-cluster_username: m0kr4n3
-cluster_password: password
-image_project: debian-cloud
-image_family: debian-11
-machine_type: e2-micro
-disk_type: pd-standard
-disk_size: 30
-bucket: bucket-7972cfbe-3da3-4f7f-a1fa-770a13c853eb 
+---
+cluster:
+  name: mig-7
+  region: europe-west9
+  size: 2
+  couchbase:
+    username: kero
+    password: password
+  template:
+    image_project: debian-cloud
+    image_family: debian-11
+    machine_type: e2-micro
+    disk_type: pd-standard
+    disk_size: 30
+  storage:
+    type: gcp_storage
+    bucket: bucket-7972cfbe-3da3-4f7f-a1fa-770a13c853eb
