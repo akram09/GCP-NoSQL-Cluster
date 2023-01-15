@@ -93,6 +93,74 @@ def region_adding_instances(
 
     
 
+# scaling up the mig or down
+def region_scaling_mig(
+    project_id, region, instance_group_manager, size, wanted_size
+    ):
+    logger.debug(f"Scaling managed instance group {instance_group_manager.name} from {size} to {wanted_size} instances")
+    # get client 
+    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
+    if size < wanted_size: 
+        # create an instance group managers create instance request
+        create_instance_request = compute_v1.CreateInstancesRegionInstanceGroupManagerRequest(
+            project=project_id,
+            region=region,
+            instance_group_manager=instance_group_manager.name,
+            region_instance_group_managers_create_instances_request_resource={
+                "instances": [
+                    {
+                        # format the name to 3 digits 
+                        "name": f"{instance_group_manager.name}-{instance_range:03d}"
+                    }
+                    for instance_range in range(size, wanted_size)
+                ]
+            },
+        )
+        # create instances 
+        operation = instance_group_manager_client.create_instances(
+            request=create_instance_request
+        )
+        # wait for operation to complete
+        try:
+            wait_for_extended_operation(operation, project_id)
+        except Exception as e:
+            logger.error(f"Error scaling instances: {e}")
+            raise e
+        logger.success(f"Instances scaled")
+    elif size > wanted_size:
+        # list all the instances to get the zone of the instances to delete 
+        managed_instances =  list_region_instances(project_id, region, instance_group_manager.name)
+        instances_zones = [ {"name": managed_instance.instance, "index": int(managed_instance.instance.split('/')[-1].split('-')[-1]) } for managed_instance in managed_instances]
+        # sort the instances by index
+        instances_zones.sort(key=lambda x: x['index'])
+        # get the instances to delete
+        instances_to_delete = instances_zones[-(size - wanted_size):]
+        # removing some instances 
+        delete_instance_request = compute_v1.DeleteInstancesRegionInstanceGroupManagerRequest(
+            project=project_id,
+            region=region,
+            instance_group_manager=instance_group_manager.name,
+            region_instance_group_managers_delete_instances_request_resource={
+                "instances": [
+                    # full url
+                    instances_to_delete[i]['name']
+                    for i in range(len(instances_to_delete))
+                ]
+            },
+        )
+        print(delete_instance_request)
+        # delete instances
+        operation = instance_group_manager_client.delete_instances(
+            request=delete_instance_request
+        )
+        # wait for operation to complete
+        try:
+            wait_for_extended_operation(operation, project_id)
+        except Exception as e:
+            logger.error(f"Error scaling instances: {e}")
+            raise e
+        logger.success(f"Instances scaled")
+
 
 # list instances of an instance group manager
 def list_region_instances(project_id, region, instance_group_name):

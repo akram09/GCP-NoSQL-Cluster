@@ -6,7 +6,7 @@ from lib.vm_instance import get_instances_from_managed_instances
 from lib.template import create_template, get_instance_template, update_template
 from lib.firewall import create_firewall_rule, check_firewall_rule
 from lib.managed_instance import create_managed_instance_group, list_instances
-from lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances, region_adding_instances, get_region_managed_instance_group
+from lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances, region_adding_instances, get_region_managed_instance_group, region_scaling_mig
 from utils.couchbase import create_couchbase_cluster
 
 # Cluster class 
@@ -80,7 +80,12 @@ class Cluster:
             if mig is None: 
                 logger.debug(f"Creating regional managed instance group {self.cluster_name}")
                 mig = create_region_managed_instance_group(project.project_id, self.cluster_region, self.cluster_name, template.name)
-            region_adding_instances(project.project_id, self.cluster_region, mig, self.cluster_size)
+                region_adding_instances(project.project_id, self.cluster_region, mig, self.cluster_size)
+            else:
+                logger.debug(f"Regional managed instance group {self.cluster_name} already exists")
+                logger.debug(f"We will update the size of the regional managed instance group {self.cluster_name} to {self.cluster_size}")
+                region_scaling_mig(project.project_id, self.cluster_region, mig, mig.target_size, self.cluster_size)
+     
         else: 
             logger.debug(f"Creating zone managed instance group {self.cluster_name}")
             #Create instance group

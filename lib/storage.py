@@ -137,7 +137,6 @@ def upload_startup_script(project_id: str, image_family: str, bucket_name: str, 
     hostnames.pop(0)
     # render the template 
     rendered_template = template.render(master_node_name=master_node_name, master_node_hostname=master_node_hostname, admin_username=cluster_username, admin_password=cluster_password, nodes=hostnames)
-    print(rendered_template)
     # write the rendered template to a file
     with open(f"./bin/couchbase-install/{startup_script}", "w") as f:
         f.write(rendered_template)
