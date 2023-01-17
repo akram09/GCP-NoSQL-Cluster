@@ -8,24 +8,16 @@ from lib.firewall import create_firewall_rule, check_firewall_rule
 from lib.managed_instance import create_managed_instance_group, list_instances
 from lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances, region_adding_instances, get_region_managed_instance_group, region_scaling_mig
 from utils.couchbase import create_couchbase_cluster
+    
+    
+class ClusterParams:
 
-# Cluster class 
-class Cluster:
-
-    def __init__(self, cluster_name, cluster_size, bucket, machine_type="e2-micro", disk_size=10, disk_type="pd-standard", extra_disk_type="pd-standard", extra_disk_size=20, image_project="debian-cloud", image_family="debian-11",  cluster_username="admin", cluster_password="password", cluster_region=None):
+    def __init__(self, cluster_name, cluster_size, storage=None, template=None, couchbase_params=None):
         self.cluster_name = cluster_name
         self.cluster_size = cluster_size
-        self.cluster_region = cluster_region
-        self.machine_type = machine_type
-        self.disk_size = disk_size
-        self.disk_type = disk_type
-        self.extra_disk_size = extra_disk_size
-        self.extra_disk_type = extra_disk_type
-        self.image_project = image_project
-        self.image_family = image_family
-        self.bucket = bucket
-        self.cluster_username = cluster_username
-        self.cluster_password = cluster_password
+        self.template = template
+        self.storage = storage
+        self.couchbase_params = couchbase_params
     
     # deploy cluster on gcp 
     def deploy_cluster_gcp(self, project): 

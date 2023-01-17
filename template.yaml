@@ -7,6 +7,7 @@ cluster:
     username: kero
     password: password
   template:
+    name: mig-7-template
     image_project: debian-cloud
     image_family: debian-11
     machine_type: e2-micro
