@@ -1,6 +1,6 @@
 import argparse
 from loguru import logger
-from entities.cluster import Cluster
+from entities.cluster import ClusterParams
 from entities.storage import GCPStorageParams
 from entities.template import TemplateParams
 from entities.couchbase import CouchbaseParams
@@ -90,7 +90,7 @@ def required_error_msg(arg):
     logger.error(f"{command_msg}\nmain.py: error: the following arguments are required: --{'-'.join(arg.split('_'))}")
 
 # Create cluster object from arguments
-def cluster_from_args(args: argparse.Namespace) -> Cluster:
+def cluster_from_args(args: argparse.Namespace) -> ClusterParams:
     if args.yaml_file != None:
         return parse_from_yaml(args.yaml_file)
     else:
@@ -104,7 +104,7 @@ def cluster_from_args(args: argparse.Namespace) -> Cluster:
         if args.bucket == None:
             required_error_msg("bucket")
             exit(0)        
-        cluster = Cluster(args.cluster_name, args.cluster_size)
+        cluster = ClusterParams(args.cluster_name, args.cluster_size)
 
         storage = Storage(args.bucket)
         cluster.storage = storage
@@ -119,5 +119,5 @@ def cluster_from_args(args: argparse.Namespace) -> Cluster:
         
         couchbase_params = CouchbaseParams(args.cluster_username, args.cluster_password)
         cluster.couchbase_params = couchbase_params
-        logger.info(f"Cluster definition: {cluster}")
+        logger.info(f"ClusterParams definition: {cluster}")
         return cluster

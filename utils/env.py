@@ -9,7 +9,6 @@ from entities.gcp_project import GCPProject
 
 
 def init(): 
-    logger.info("Loading environment variables")
     # load environment variables from .env file
     load_dotenv()
 

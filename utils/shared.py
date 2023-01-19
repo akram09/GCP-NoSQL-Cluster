@@ -1,6 +1,6 @@
 from utils.env import get_env_project_id, check_application_credentials
 from loguru import logger
-from entities import GCPProject
+from entities.gcp_project import GCPProject
 
 # Check parameters
 def check_gcp_params(args):

@@ -1,6 +1,6 @@
 
 class TemplateParams:
-    def __init__(self, name, machine_type="e2-micro", disk_size=10, disk_type="pd-standard", extra_disk_type="pd-standard", extra_disk_size=20, image_project="debian-cloud", image_family="debian-11")
+    def __init__(self, name, machine_type="e2-micro", disk_size=10, disk_type="pd-standard", extra_disk_type="pd-standard", extra_disk_size=20, image_project="debian-cloud", image_family="debian-11"):
         self.name = name
         self.machine_type = machine_type
         self.disk_size = disk_size

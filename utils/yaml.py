@@ -1,5 +1,6 @@
+from loguru import logger
 import yaml
-from entities.cluster import Cluster
+from entities.cluster import ClusterParams
 from entities.storage import GCPStorageParams
 from entities.template import TemplateParams
 from entities.couchbase import CouchbaseParams
@@ -44,7 +45,7 @@ def parse_from_yaml(yaml_file: str):
     storage = GCPStorageParams(bucket)
 
 
-    cluster = Cluster(cluster_name, cluster_size, storage)
+    cluster = ClusterParams(cluster_name, cluster_size, storage)
 
     if 'name' not in data['cluster']['template']: 
         template_name = f"template-{self.cluster_name}"
@@ -55,33 +56,33 @@ def parse_from_yaml(yaml_file: str):
 
     if 'template' in data['cluster']:
         # parse template values
-        with data['cluster']['template'] as template:            
-            if 'machine_type' in template:
-                template_params.machine_type = template['machine_type']
-            if 'disk_size' in template:
-                template_params.disk_size = template['disk_size']
-            if 'disk_type' in template:
-                template_params.disk_type = template['disk_type']
-            if 'extra_disk_type' in template:
-                template_params.extra_disk_type = template['extra_disk_type']
-            if 'extra_disk_size' in template:
-                template_params.extra_disk_size = template['extra_disk_size']
-            if 'image_project' in template:
-                template_params.image_project = template['image_project']
-            if 'image_family' in template:
-                template_params.image_family = template['image_family']
+        template = data['cluster']['template'] 
+        if 'machine_type' in template:
+            template_params.machine_type = template['machine_type']
+        if 'disk_size' in template:
+            template_params.disk_size = template['disk_size']
+        if 'disk_type' in template:
+            template_params.disk_type = template['disk_type']
+        if 'extra_disk_type' in template:
+            template_params.extra_disk_type = template['extra_disk_type']
+        if 'extra_disk_size' in template:
+            template_params.extra_disk_size = template['extra_disk_size']
+        if 'image_project' in template:
+            template_params.image_project = template['image_project']
+        if 'image_family' in template:
+            template_params.image_family = template['image_family']
     
     cluster.template = template_params
 
     couchbase_params = CouchbaseParams() 
     if 'couchbase' in data['cluster']: 
-        with data['cluster']['couchbase'] as couchbase:
-            # parse couchbase values
-            if 'cluster_username' in data:
-                couchbase_params.cluster_username = couchbase['username']
-            if 'cluster_password' in data:
-                couchbase_params.cluster_password = couchbase['password']
+        couchbase = data['cluster']['couchbase'] 
+        # parse couchbase values
+        if 'username' in couchbase:
+            couchbase_params.username = couchbase['username']
+        if 'password' in couchbase:
+            couchbase_params.password = couchbase['password']
 
-    cluster.couchbase = couchbase_params
+    cluster.couchbase_params = couchbase_params
 
     return cluster

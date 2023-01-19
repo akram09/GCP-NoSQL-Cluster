@@ -8,7 +8,6 @@ import os
 
 def create_template(
     project_id: str,
-    zone: str,
     template_name: str,
     machine_type: str,
     machine_image: compute_v1.types.compute.Image,
@@ -106,7 +105,6 @@ def create_template(
 def update_template(
     project_id: str,
     template: compute_v1.InstanceTemplate,
-    zone: str,
     machine_type: str,
     machine_image: compute_v1.types.compute.Image,
     disk_type: str,
