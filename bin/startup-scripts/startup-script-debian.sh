@@ -35,4 +35,14 @@ if [[ $(hostname -a) == mig-7-000 ]]; then
     
     # Rebalance
     /opt/couchbase/bin/couchbase-cli rebalance -c mig-7-000.c.upwork-python-automation.internal:8091 -u kero -p password
+else
+    # wait for the master node to init the cluster
+    sleep 60
+    # get node hostname
+    node_hostname=$(hostname -a)
+    echo "Join the cluster"
+    # Join the cluster
+    /opt/couchbase/bin/couchbase-cli server-add -c mig-7-000.c.upwork-python-automation.internal:8091 --server-add=$node_hostname:8091 --server-add-username=kero --server-add-password=password --username=kero --password=password
+    # Rebalance
+    /opt/couchbase/bin/couchbase-cli rebalance -c mig-7-000.c.upwork-python-automation.internal:8091 -u kero -p password
 fi

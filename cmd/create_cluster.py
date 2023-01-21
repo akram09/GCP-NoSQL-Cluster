@@ -4,7 +4,7 @@ from utils.args import cluster_from_args
 from lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances, region_adding_instances, get_region_managed_instance_group, region_scaling_mig
 from lib.template import create_template, get_instance_template, update_template
 from lib.firewall import create_firewall_rule, check_firewall_rule
-from lib.storage import upload_startup_script
+from lib.storage import upload_startup_script, upload_shutdown_script
 from utils.gcp import get_image_from_family
 
 
@@ -57,6 +57,8 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
     machine_image = get_image_from_family(template_params.image_project, template_params.image_family)
     # upload the startup script to the bucket
     startup_script_url = upload_startup_script(project.project_id, template_params.image_family, storage_params.bucket, couchbase_params.username, couchbase_params.password, cluster_params.name, cluster_params.size)
+    # upload the shutdown script to the bucket
+    shutdown_script_url = upload_shutdown_script(project.project_id, template_params.image_family, storage_params.bucket)
 
     template = get_instance_template(project.project_id, template_params.name)
     # check if there is a template existing 
@@ -69,7 +71,8 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
             template_params.machine_type,
             machine_image,
             template_params.disks,
-            startup_script_url
+            startup_script_url, 
+            shutdown_script_url
         )
     else:
         logger.debug(f"Instance template {template_params.name} already exists")
@@ -80,7 +83,8 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
             template_params.machine_type,
             machine_image,
             template_params.disks,
-            startup_script_url 
+            startup_script_url, 
+            shutdown_script_url
         )
     return template
 

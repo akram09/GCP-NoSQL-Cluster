@@ -13,6 +13,7 @@ def create_template(
     machine_image: compute_v1.types.compute.Image,
     disks, 
     startup_script_url: str,
+    shutdown_script_url: str
     ):
     """
     Create a new instance template with the provided name and a specific
@@ -80,6 +81,10 @@ def create_template(
         {
             "key": "startup-script-url",
             "value": startup_script_url
+        },
+        {
+            "key": "shutdown-script-url",
+            "value": shutdown_script_url
         }
     ]
     template.properties.metadata = metadata
@@ -105,7 +110,8 @@ def update_template(
     machine_type: str,
     machine_image: compute_v1.types.compute.Image,
     disks_params,
-    startup_script_url: str
+    startup_script_url: str,
+    shutdown_script_url: str
     ) -> compute_v1.InstanceTemplate:
 
     logger.info(f"Updating instance template {template.name}...")
@@ -124,7 +130,6 @@ def update_template(
 
     # check disks 
     disks = template.properties.disks
-    print(disks)
 
     boot_disk = disks[0]
     extra_disk = disks[1]
@@ -160,6 +165,11 @@ def update_template(
     if template.properties.metadata.items[0].value != startup_script_url:
         logger.debug("Startup script url is different, updating startup script url")
         template.properties.metadata.items[0].value = startup_script_url
+
+    # check the shutdown script url
+    if template.properties.metadata.items[1].value != shutdown_script_url:
+        logger.debug("Shutdown script url is different, updating shutdown script url")
+        template.properties.metadata.items[1].value = shutdown_script_url
 
     # send the update request
 

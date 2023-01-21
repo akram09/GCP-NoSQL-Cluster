@@ -35,4 +35,14 @@ if [[ $(hostname -a) == {{ master_node_name }} ]]; then
     {% endfor %}
     # Rebalance
     /opt/couchbase/bin/couchbase-cli rebalance -c {{ master_node_hostname }}:8091 -u {{ admin_username }} -p {{ admin_password }}
+else
+    # wait for the master node to init the cluster
+    sleep 60
+    # get node hostname
+    node_hostname=$(hostname -a)
+    echo "Join the cluster"
+    # Join the cluster
+    /opt/couchbase/bin/couchbase-cli server-add -c {{ master_node_hostname }}:8091 --server-add=$node_hostname:8091 --server-add-username={{ admin_username }} --server-add-password={{ admin_password }} --username={{ admin_username }} --password={{ admin_password }}
+    # Rebalance
+    /opt/couchbase/bin/couchbase-cli rebalance -c {{ master_node_hostname }}:8091 -u {{ admin_username }} -p {{ admin_password }}
 fi

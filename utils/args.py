@@ -14,8 +14,6 @@ def parse_args_from_cmdline():
     subparsers = parser.add_subparsers(help='Different commands for lifecycle management')
     # add arguments for the create subcommand
     add_create_cmd_args(subparsers)
-    # add arguments for the shutdown subcommand
-    add_shutdown_cmd_args(subparsers)
 
     namespace = parser.parse_args()
     
@@ -24,19 +22,6 @@ def parse_args_from_cmdline():
         parser.print_help()
         exit(0)
     return namespace
-
-
-# Add "shutdown" subcommand and arguments
-def add_shutdown_cmd_args(subparsers):
-    shutdown_subparser = subparsers.add_parser('shutdown', help='Shutdown a couchbase cluster')
-    # cluster name
-    shutdown_subparser.add_argument('--cluster-name', dest='cluster_name', help='Name of the cluster')
-    # authentication type
-    shutdown_subparser.add_argument('--authentication-type', required=True ,dest='authentication_type', help="The type of authentication to be used either service-account or oauth")
-    # project id 
-    shutdown_subparser.add_argument('--project-id', dest='project_id', help='The id of GCP project, this argument can be also specified with the "GOOGLE_CLOUD_PROJECT" environment variable.')
-    # set the function to be called when running the sub command 
-    shutdown_subparser.set_defaults(command="shutdown")
 
 
 

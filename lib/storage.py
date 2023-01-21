@@ -123,7 +123,7 @@ def upload_startup_script(project_id: str, image_family: str, bucket_name: str, 
     logger.debug(f"Added {member} to {bucket.name} with {role} role.")
 
     # read the template 
-    with open(f"./bin/couchbase-install/{script_template}", "r") as f:
+    with open(f"./bin/startup-scripts/{script_template}", "r") as f:
         template = Template(f.read())
 
 
@@ -138,29 +138,68 @@ def upload_startup_script(project_id: str, image_family: str, bucket_name: str, 
     # render the template 
     rendered_template = template.render(master_node_name=master_node_name, master_node_hostname=master_node_hostname, admin_username=cluster_username, admin_password=cluster_password, nodes=hostnames)
     # write the rendered template to a file
-    with open(f"./bin/couchbase-install/{startup_script}", "w") as f:
+    with open(f"./bin/startup-scripts/{startup_script}", "w") as f:
         f.write(rendered_template)
 
     # upload the startup script to the bucket
-    startup_script_url = upload_blob(bucket.name, os.path.abspath(f"bin/couchbase-install/{startup_script}"), startup_script)
+    startup_script_url = upload_blob(bucket.name, os.path.abspath(f"bin/startup-scripts/{startup_script}"), startup_script)
 
     return startup_script_url
 
-# render the cluster provisioning script and upload it to the bucket 
-def upload_cluster_provisioning_script(bucket_name: str): 
-    cluster_provisioning_script = "cluster-init.sh"
-    script_template = "cluster-init.j2"
+
+# uploading shutdown scripts
+def upload_shutdown_script(project_id: str, image_family: str, bucket_name: str):
+    """Uploads the shutdown script based on the image family"""
+    logger.info(f"Uploading shutdown script for {image_family} image family...")
+
+    # Selecting shutdown script based on the OS family
+    dist = image_family.split('-')[0]
+
+    if dist == 'debian' or dist == 'ubuntu':
+        shutdown_script = "shutdown-script-debian.sh"
+        script_template = "shutdown-script-debian.j2"
+    elif dist == 'rhel':
+        shutdown_script = "shutdown-script-rhel.sh"
+        script_template = "shutdown-script-rhel.j2"
+    elif dist ==  'suse':
+        shutdown_script = "shutdown-script-suse.sh"
+        script_template = "shutdown-script-suse.j2"
+    else:
+        logger.error(f"Unsupported OS family: {dist}")
+        raise("There is no shutdown script for the selected OS family.")
+
+    logger.info("Checking if the bucket exists else creating the bucket...")
+    # Create the bucket if not existed
+    bucket = create_bucket(bucket_name)
+
+    logger.info("Assigning read storage role to the bucket...") 
+    # Add Compute Engine default service account to the bucket
+    # read member from environment variable
+    member = {"user": os.environ['COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL']}
+    role = "roles/storage.objectViewer"
+
+    policy = bucket.get_iam_policy(requested_policy_version=3)
+
+    policy.bindings.append({"role": role, "members": [member]})
+
+    bucket.set_iam_policy(policy)
+    logger.debug(f"Added {member} to {bucket.name} with {role} role.")
 
     # read the template 
-    with open(f"./bin/cluster-provisioning/{script_template}", "r") as f:
+    with open(f"./bin/shutdown-scripts/{script_template}", "r") as f:
         template = Template(f.read())
+
+
     # render the template 
     rendered_template = template.render()
     # write the rendered template to a file
-    with open(f"./bin/cluster-provisioning/{cluster_provisioning_script}", "w") as f:
+    with open(f"./bin/shutdown-scripts/{shutdown_script}", "w") as f:
         f.write(rendered_template)
 
     # upload the startup script to the bucket
-    cluster_provisioning_script_url = upload_blob(bucket_name, os.path.abspath(f"bin/cluster-provisioning/{cluster_provisioning_script}"), cluster_provisioning_script)
+    shutdown_script_url = upload_blob(bucket.name, os.path.abspath(f"bin/shutdown-scripts/{shutdown_script}"), shutdown_script)
 
-    return cluster_provisioning_script_url
+    return shutdown_script_url
+
+
+
