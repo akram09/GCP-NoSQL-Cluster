@@ -12,8 +12,8 @@ from utils.gcp import get_image_from_family
 def create_cluster(args):
     logger.info("Welcome to the cluster creation script")
     logger.info("Checking parameters ...")
-    gcp_project = check_gcp_params(args)
-    logger.info(f"Parameters checked, project is {gcp_project}")
+    project = check_gcp_params(args)
+    logger.info(f"Parameters checked, project is {project}")
 
     # parse parameters 
     logger.info("Parsing parameters ...")
@@ -28,37 +28,28 @@ def create_cluster(args):
 
         # setup instance template
         logger.info("Checking instance template ...")
-        setup_instance_template(project, cluster, cluster.template, cluster.storage, cluster.couchbase)
+        instance_template = setup_instance_template(project, cluster, cluster.template, cluster.storage, cluster.couchbase_params)
         
 
         # create managed instance group
         logger.info("Creating managed instance group ...")
-        create_mig(project, cluster)
+        create_mig(project, cluster, instance_template)
 
     else:
         logger.debug(f"Regional managed instance group {cluster.name} already exists")
+        # setup instance template
+        logger.info("Checking instance template ...")
+        instance_template = setup_instance_template(project, cluster, cluster.template, cluster.storage, cluster.couchbase_params)
         logger.info(f"Scaling managed instance group {cluster.name} to {cluster.size} instances ...")
-        scale_mig(project, cluster)
+        scale_mig(project, cluster, mig)
 
-
-
-    logger.info("Checking firewall rules")
-    # Check if the firewall rule exists
-    if check_firewall_rule(project.project_id, self.cluster_name+"-firewall"):
-        logger.debug(f"Firewall rule {self.cluster_name}-firewall already exists")
-    else:
-        logger.debug(f"Creating firewall rule {self.cluster_name}-firewall")
-        create_firewall_rule(project.project_id, self.cluster_name+"-firewall")
-        logger.success(f"Firewall rule {self.cluster_name}-firewall created")
-    logger.success(f"Cluster {self.cluster_name} created successfully")
+    logger.info("Checking firewall rules ...")
+    setup_firewall(project, cluster.name)
+    logger.success(f"Cluster {cluster.name} created successfully")
 
 def scale_mig(project, cluster, mig):
     # scaling mig
     region_scaling_mig(project.project_id, cluster.region, mig, mig.target_size, cluster.size)
-
-
-
-
 
 
 def setup_instance_template(project, cluster_params, template_params, storage_params, couchbase_params): 
@@ -97,11 +88,21 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
             template_params.extra_disk_size,
             startup_script_url 
         )
+    return template
 
 
 
 def create_mig(project, cluster, template):
     logger.debug(f"Creating regional managed instance group {cluster.name}")
-    mig = create_region_managed_instance_group(project.project_id, cluster.region, cluster.name, template.name)
+    mig = create_region_managed_instance_group(project.project_id, cluster.region, cluster.name, template)
     region_adding_instances(project.project_id, cluster.region, mig, cluster.size)
     
+
+def setup_firewall(project, cluster_name):
+    # Check if the firewall rule exists
+    if check_firewall_rule(project.project_id, cluster_name+"-firewall"):
+        logger.debug(f"Firewall rule {cluster_name}-firewall already exists")
+    else:
+        logger.debug(f"Creating firewall rule {cluster_name}-firewall")
+        create_firewall_rule(project.project_id, cluster_name+"-firewall")
+        logger.success(f"Firewall rule {cluster_name}-firewall created")

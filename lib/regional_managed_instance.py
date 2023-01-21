@@ -5,10 +5,8 @@ from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, get_image_from_family
 
 # create managed instance group 
-def create_region_managed_instance_group(project_id, region, instance_group_name, instance_template_name):
+def create_region_managed_instance_group(project_id, region, instance_group_name, instance_template):
     logger.info(f"Creating managed instance group {instance_group_name} with zero instances")
-    # get instance template 
-    instance_template = get_instance_template(project_id, instance_template_name)
     # create instance group manager client
     instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
     # create instance group manager request

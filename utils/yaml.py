@@ -33,6 +33,9 @@ def parse_from_yaml(yaml_file: str):
     if data['cluster']['size'] == None:
         logger.error("Cluster size is missing from the yaml file")
         exit(0)
+    if data['cluster']['region'] == None:
+        logger.error("Cluster region is missing from the yaml file")
+        exit(0)
     if data['cluster']['storage']['bucket'] == None:
         logger.error("Bucket is missing from the yaml file")
         exit(0)
@@ -40,12 +43,13 @@ def parse_from_yaml(yaml_file: str):
     # creat a cluster object from the properties
     cluster_name = data['cluster']['name']
     cluster_size = data['cluster']['size']
+    cluster_region = data['cluster']['region']
     bucket = data['cluster']['storage']['bucket']
 
     storage = GCPStorageParams(bucket)
 
 
-    cluster = ClusterParams(cluster_name, cluster_size, storage)
+    cluster = ClusterParams(cluster_name, cluster_size, cluster_region, storage)
 
     if 'name' not in data['cluster']['template']: 
         template_name = f"template-{self.cluster_name}"

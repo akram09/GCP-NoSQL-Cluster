@@ -1,4 +1,4 @@
-from utils.env import get_env_project_id, check_application_credentials
+from utils.env import get_env_project_id, check_application_credentials, check_compute_engine_service_account_email
 from loguru import logger
 from entities.gcp_project import GCPProject
 
@@ -25,5 +25,6 @@ def check_gcp_params(args):
     elif args.authentication_type == "oauth":
         logger.error("OAuth authentication not implemented yet")
         exit(1)
+
 
     return  GCPProject(args.project_id)

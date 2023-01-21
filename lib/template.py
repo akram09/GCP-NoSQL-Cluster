@@ -28,8 +28,8 @@ def create_template(
     """
     logger.info("Creating instance template...")
     # Create KMS key ring and symmetric encryption/decryption key
-    key_ring_id = f"key-ring-{template_name.replace('template-', '')}" 
-    logger.info("Checking key ring ...")
+    key_ring_id = f"key-ring-{template_name.replace('-template', '')}" 
+    logger.info(f"Checking key ring {key_ring_id} ...")
     # check if key ring exists 
     key_ring = get_key_ring(project_id, "global", key_ring_id)
     if key_ring is None: 
@@ -37,7 +37,7 @@ def create_template(
         key_ring = create_key_ring(project_id, "global", key_ring_id)
 
     logger.info("Checking encryption key ...")
-    key_id = f"key-{template_name.replace('template-', '')}"
+    key_id = f"key-{template_name.replace('-template', '')}"
     key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id+f"-{uuid.uuid4().hex}")
     # get disk from image
     disk = disk_from_image(disk_type, disk_size, key, True, machine_image.self_link)

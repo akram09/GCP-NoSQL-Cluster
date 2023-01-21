@@ -84,7 +84,7 @@ def add_create_cmd_args(subparsers):
 
 
 def required_error_msg(arg):
-    command_msg = '''usage: main.py [-h] --yaml-file YAML_FILE [--cluster-name CLUSTER_NAME] [--cluster-size CLUSTER_SIZE] [--bucket BUCKET] [--machine-type MACHINE_TYPE] [--disk-size DISK_SIZE] [--template-name TEMPLATE_NAME]
+    command_msg = '''usage: main.py create  [-h] --yaml-file YAML_FILE [--cluster-name CLUSTER_NAME] [--cluster-size CLUSTER_SIZE] [--bucket BUCKET] [--machine-type MACHINE_TYPE] [--disk-size DISK_SIZE] [--template-name TEMPLATE_NAME]
 [--disk-type DISK_TYPE] [--image-project IMAGE_PROJECT] [--image-family IMAGE_FAMILY] [ --cluster-username CLUSTER_USERNAME] [--cluster-password CLUSTER_PASSWORD]
         '''
     logger.error(f"{command_msg}\nmain.py: error: the following arguments are required: --{'-'.join(arg.split('_'))}")
@@ -101,10 +101,13 @@ def cluster_from_args(args: argparse.Namespace) -> ClusterParams:
         if args.cluster_size == None:
             required_error_msg("cluster_size")
             exit(0)
+        if args.region == None:
+            required_error_msg("region")
+            exit(0)
         if args.bucket == None:
             required_error_msg("bucket")
             exit(0)        
-        cluster = ClusterParams(args.cluster_name, args.cluster_size)
+        cluster = ClusterParams(args.cluster_name, args.cluster_size, agrs.region)
 
         storage = Storage(args.bucket)
         cluster.storage = storage
