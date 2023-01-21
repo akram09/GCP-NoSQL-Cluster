@@ -63,18 +63,16 @@ def parse_from_yaml(yaml_file: str):
         template = data['cluster']['template'] 
         if 'machine_type' in template:
             template_params.machine_type = template['machine_type']
-        if 'disk_size' in template:
-            template_params.disk_size = template['disk_size']
-        if 'disk_type' in template:
-            template_params.disk_type = template['disk_type']
-        if 'extra_disk_type' in template:
-            template_params.extra_disk_type = template['extra_disk_type']
-        if 'extra_disk_size' in template:
-            template_params.extra_disk_size = template['extra_disk_size']
         if 'image_project' in template:
             template_params.image_project = template['image_project']
         if 'image_family' in template:
             template_params.image_family = template['image_family']
+        if 'disks' in template:
+            template_params.set_disks(template['disks'])
+        else:
+            # if no disks are defined, use the default one
+            template_params.set_disks([{'size': 10, 'type': 'pd-standard',  'boot': True}])
+
     
     cluster.template = template_params
 

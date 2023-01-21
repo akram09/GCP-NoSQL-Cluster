@@ -68,10 +68,7 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
             template_params.name,
             template_params.machine_type,
             machine_image,
-            template_params.disk_type,
-            template_params.disk_size,
-            template_params.extra_disk_type,
-            template_params.extra_disk_size,
+            template_params.disks,
             startup_script_url
         )
     else:
@@ -82,10 +79,7 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
             template,
             template_params.machine_type,
             machine_image,
-            template_params.disk_type,
-            template_params.disk_size,
-            template_params.extra_disk_type,
-            template_params.extra_disk_size,
+            template_params.disks,
             startup_script_url 
         )
     return template

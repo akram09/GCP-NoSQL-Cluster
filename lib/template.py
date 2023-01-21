@@ -11,10 +11,7 @@ def create_template(
     template_name: str,
     machine_type: str,
     machine_image: compute_v1.types.compute.Image,
-    disk_type: str,
-    disk_size: int,
-    extra_disk_type: str,
-    extra_disk_size: int,
+    disks, 
     startup_script_url: str,
     ):
     """
@@ -39,9 +36,7 @@ def create_template(
     logger.info("Checking encryption key ...")
     key_id = f"key-{template_name.replace('-template', '')}"
     key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id+f"-{uuid.uuid4().hex}")
-    # get disk from image
-    disk = disk_from_image(disk_type, disk_size, key, True, machine_image.self_link)
-    extra_disk = disk_from_image(extra_disk_type, extra_disk_size, key, False, machine_image.self_link)
+    
     # Add google API support in the template so that it can be used inside the vm
 
 
@@ -64,10 +59,12 @@ def create_template(
     tags = compute_v1.Tags()
     tags.items = ["couchbase-server"]
     template.properties.tags = tags 
-    template.properties.disks = [disk, extra_disk]
     template.properties.machine_type = machine_type
     template.properties.network_interfaces = [network_interface]
 
+    # setting disks
+    template_disks = list(map(lambda disk_params: disk_from_image(disk_params.type, disk_params.size, key, disk_params.boot, machine_image.self_link) , disks))
+    template.properties.disks =  template_disks
     # get email from COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL environment variable
     email = os.environ["COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL"]
     #set scopes in serviceaccounts
@@ -107,10 +104,7 @@ def update_template(
     template: compute_v1.InstanceTemplate,
     machine_type: str,
     machine_image: compute_v1.types.compute.Image,
-    disk_type: str,
-    disk_size: int,
-    extra_disk_type: str, 
-    extra_disk_size: int, 
+    disks_params,
     startup_script_url: str
     ) -> compute_v1.InstanceTemplate:
 
@@ -126,8 +120,12 @@ def update_template(
     except:
         logger.debug("The template is being used by a mig")
         return template
+
+
     # check disks 
     disks = template.properties.disks
+    print(disks)
+
     boot_disk = disks[0]
     extra_disk = disks[1]
 
