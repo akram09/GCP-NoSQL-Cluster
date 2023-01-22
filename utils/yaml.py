@@ -84,6 +84,8 @@ def parse_from_yaml(yaml_file: str):
             couchbase_params.username = couchbase['username']
         if 'password' in couchbase:
             couchbase_params.password = couchbase['password']
+    else:
+        couchbase_params = None
 
     cluster.couchbase_params = couchbase_params
 
