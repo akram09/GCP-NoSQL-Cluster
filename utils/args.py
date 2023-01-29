@@ -15,6 +15,8 @@ def parse_args_from_cmdline():
     # add arguments for the create subcommand
     add_create_cmd_args(subparsers)
 
+    add_update_cmd_args(subparsers)
+
     namespace = parser.parse_args()
     
     # if no command is specified, then print the help 
@@ -67,9 +69,52 @@ def add_create_cmd_args(subparsers):
     create_subparser.set_defaults(command="create")
 
 
+# Add "update"  subcommand and arguments
+def add_update_cmd_args(subparsers):
+    create_subparser = subparsers.add_parser('update', help='Update and deploy a couchbase cluster')
+    
+    create_subparser.add_argument('--project-id', dest='project_id', help='The id of GCP project, this argument can be also specified with the "GOOGLE_CLOUD_PROJECT" environment variable.')
+    # yaml file
+    create_subparser.add_argument('--yaml-file', dest='yaml_file', help='name of the yaml file with cluster definition')
+    # authentifcation type 
+    create_subparser.add_argument('--authentication-type', default="service-account" ,dest='authentication_type', help="The type of authentication to be used either service-account or oauth")
+    # cluster name
+    create_subparser.add_argument('--cluster-name', dest='cluster_name', help='Name of the cluster')
+    # cluster size 
+    create_subparser.add_argument('--cluster-size', dest='cluster_size', help='Number of nodes in the cluster')
+    # cloud storage bucket
+    create_subparser.add_argument('--bucket', dest='bucket', help='Cloud storage bucket to store the cluster init scripts')
+    # cluster region
+    create_subparser.add_argument('--region', dest='region', help='Region where the cluster will be created')
+    # machine type with default value 
+    create_subparser.add_argument('--machine-type', dest='machine_type', help='Machine type for the cluster')
+    # disk size with default value
+    create_subparser.add_argument('--disk-size', dest='disk_size', help='Disk size for the cluster')
+    # disk type with default value
+    create_subparser.add_argument('--disk-type', dest='disk_type', help='Disk type for the cluster')
+    # extra disk tyoe 
+    create_subparser.add_argument('--extra-disk-type', dest='extra_disk_type', help='Extra disk type')
+    # extra disk size
+    create_subparser.add_argument('--extra-disk-size', dest='extra_disk_size', help='Extra disk size')
+    # machine image project with default value 
+    create_subparser.add_argument('--image-project', dest='image_project', help='Machine image project for the cluster')
+    # Template name
+    create_subparser.add_argument('--template-name', dest='template name, this parameter needs to be present')
+    # machine image family with default value 
+    create_subparser.add_argument('--image-family', dest='image_family', help='Machine image family project for the cluster')
+    # cluster username with default value
+    create_subparser.add_argument('--cluster-username', dest='cluster-username', help='Username for the cluster')
+    # cluster password with default value
+    create_subparser.add_argument('--cluster-password', dest='cluster-password', help='Password for the cluster')
 
-def required_error_msg(arg):
-    command_msg = '''usage: main.py create  [-h] --yaml-file YAML_FILE [--cluster-name CLUSTER_NAME] [--cluster-size CLUSTER_SIZE] [--bucket BUCKET] [--machine-type MACHINE_TYPE] [--disk-size DISK_SIZE] [--template-name TEMPLATE_NAME]
+    # set the function to be called when running the sub command
+    create_subparser.set_defaults(command="update")
+
+
+
+
+def required_error_msg(arg, command):
+    command_msg = f'''usage: main.py {command}  [-h] --yaml-file YAML_FILE [--cluster-name CLUSTER_NAME] [--cluster-size CLUSTER_SIZE] [--bucket BUCKET] [--machine-type MACHINE_TYPE] [--disk-size DISK_SIZE] [--template-name TEMPLATE_NAME]
 [--disk-type DISK_TYPE] [--image-project IMAGE_PROJECT] [--image-family IMAGE_FAMILY] [ --cluster-username CLUSTER_USERNAME] [--cluster-password CLUSTER_PASSWORD]
         '''
     logger.error(f"{command_msg}\nmain.py: error: the following arguments are required: --{'-'.join(arg.split('_'))}")
@@ -81,16 +126,16 @@ def cluster_from_args(args: argparse.Namespace) -> ClusterParams:
     else:
         logger.info("Creating cluster from arguments")
         if args.cluster_name == None:
-            required_error_msg("cluster_name")
+            required_error_msg("cluster_name", args.command)
             exit(0)
         if args.cluster_size == None:
-            required_error_msg("cluster_size")
+            required_error_msg("cluster_size", args.command)
             exit(0)
         if args.region == None:
-            required_error_msg("region")
+            required_error_msg("region", args.command)
             exit(0)
         if args.bucket == None:
-            required_error_msg("bucket")
+            required_error_msg("bucket", args.command)
             exit(0)        
         cluster = ClusterParams(args.cluster_name, args.cluster_size, agrs.region)
 

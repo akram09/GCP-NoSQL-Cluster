@@ -2,7 +2,7 @@ import uuid
 from loguru import logger
 from utils.shared import check_gcp_params
 from utils.args import cluster_from_args
-from lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances, region_adding_instances, get_region_managed_instance_group, region_scaling_mig
+from lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances, region_adding_instances, get_region_managed_instance_group, region_scaling_mig, update_region_managed_instance_group
 from lib.template import create_template, get_instance_template, update_template
 from lib.firewall import create_firewall_rule, check_firewall_rule
 from lib.storage import upload_startup_script, upload_shutdown_script
@@ -12,8 +12,8 @@ from utils.gcp import get_image_from_family
 
 
 
-def create_cluster(args):
-    logger.info("Welcome to the cluster creation script")
+def update_cluster(args):
+    logger.info("Welcome to the cluster update  script")
     logger.info("Checking parameters ...")
     project = check_gcp_params(args)
     logger.info(f"Parameters checked, project is {project}")
@@ -23,41 +23,37 @@ def create_cluster(args):
     cluster = cluster_from_args(args)
     logger.info(f"Parameters parsed, cluster is {cluster}")
 
-
-    # checking secret manager
-    logger.info("Checking secret manager ...")
-    secret_name = setup_secret_manager(project, cluster, cluster.couchbase_params)
-
-    # checking encryption keys
-    logger.info("Checking encryption keys ...")
-    key = setup_encryption_keys(project.project_id, cluster.name)
-
-    # upload scripts 
-    logger.info("Uploading scripts ...")
-    scripts = upload_scripts(project, cluster.storage, cluster.template, cluster, secret_name)
-
-    # setup instance template
-    logger.info("Checking instance template ...")
-    instance_template = setup_instance_template(project, cluster, cluster.template, cluster.storage, scripts, key)
-    
     # check managed instance group 
     logger.info(f"Checking if managed instance group {cluster.name} exists ...")
     mig = get_region_managed_instance_group(project.project_id, cluster.region, cluster.name)
     if mig is None: 
         logger.info(f"Managed instance group {cluster.name} does not exist")
-        # create managed instance group
-        logger.info("Creating managed instance group ...")
-        create_mig(project, cluster, instance_template)
-
+        logger.info("You will need to create a new instance group")
+        exit(1)
     else:
-        logger.debug(f"Regional managed instance group {cluster.name} already exists")    
-        logger.info(f"Scaling managed instance group {cluster.name} to {cluster.size} instances ...")
-        scale_mig(project, cluster, mig)
+        logger.debug(f"Regional managed instance group {cluster.name} already exists")
 
+        # checking secret manager
+        logger.info("Checking secret manager ...")
+        secret_name = setup_secret_manager(project, cluster, cluster.couchbase_params)
+
+        # checking encryption keys
+        logger.info("Checking encryption keys ...")
+        key = setup_encryption_keys(project.project_id, cluster.name)
+
+        # upload scripts 
+        logger.info("Uploading scripts ...")
+        scripts = upload_scripts(project, cluster.storage, cluster.template, cluster, secret_name)
+
+        # setup instance template
+        logger.info("Checking instance template ...")
+        instance_template = setup_instance_template(project, cluster, cluster.template, cluster.storage, scripts, key)
+        # update managed instance group 
+        logger.info("Updating managed instance group ...")
+        update_mig(project, cluster, instance_template)
     logger.info("Checking firewall rules ...")
     setup_firewall(project, cluster.name)
-    logger.success(f"Cluster {cluster.name} created successfully")
-
+    logger.success(f"Cluster {cluster.name} updated successfully")
 
 
 
@@ -110,9 +106,6 @@ def setup_secret_manager(project, cluster, couchbase_params):
     return secret_name
 
 
-def scale_mig(project, cluster, mig):
-    # scaling mig
-    region_scaling_mig(project.project_id, cluster.region, mig, mig.target_size, cluster.size)
 
 
 
@@ -150,26 +143,14 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
         )
     else:
         logger.debug(f"Instance template {template_params.name} already exists")
-        # update the instance template 
-        update_template(
-            project.project_id,
-            template,
-            template_params.machine_type,
-            machine_image,
-            template_params.disks,
-            encryption_key,
-            scripts_urls['startup_script_url'],
-            scripts_urls['shutdown_script_url']
-        )
+        logger.error("To update the cluster we would need to create a new instance template with new name ")
+        exit(1)
     return template
 
 
-
-def create_mig(project, cluster, template):
-    logger.debug(f"Creating regional managed instance group {cluster.name}")
-    mig = create_region_managed_instance_group(project.project_id, cluster.region, cluster.name, template)
-    region_adding_instances(project.project_id, cluster.region, mig, cluster.size)
-    
+def update_mig(project, cluster, template):
+    logger.debug(f"Updating regional managed instance group {cluster.name}")
+    update_region_managed_instance_group(project.project_id, cluster.region, cluster.name, template) 
 
 def setup_firewall(project, cluster_name):
     # Check if the firewall rule exists

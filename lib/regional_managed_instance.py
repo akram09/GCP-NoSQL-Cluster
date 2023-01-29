@@ -4,6 +4,35 @@ from lib.template import get_instance_template
 from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, get_image_from_family
 
+
+
+# update the managed instance group
+def update_region_managed_instance_group(project_id, region, instance_group_name, instance_template):
+    logger.info(f"Updating managed instance group {instance_group_name}")
+    # create instance group manager client
+    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
+    apply_update_request = compute_v1.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest(
+        project=project_id,
+        region=region,
+        instance_group_manager=instance_group_name,
+        region_instance_group_managers_apply_updates_request_resource={
+            "minimal_action": "REPLACE",
+            "most_disruptive_allowed_action": "REPLACE",
+        },
+    )
+    # update instance group manager
+    operation = instance_group_manager_client.apply_updates_to_instances(
+        request=apply_update_request
+    )
+    # wait for operation to complete
+    try:
+        wait_for_extended_operation(operation, project_id)
+    except Exception as e:
+        logger.error(f"Error updating managed instance group: {e}")
+        raise e
+    logger.success(f"Managed instance group {instance_group_name} updated")
+
+
 # create managed instance group 
 def create_region_managed_instance_group(project_id, region, instance_group_name, instance_template):
     logger.info(f"Creating managed instance group {instance_group_name} with zero instances")
@@ -227,6 +256,10 @@ def create_region_managed_instance_group_request(project_id, region, instance_gr
         # set update policy 
         update_policy=compute_v1.InstanceGroupManagerUpdatePolicy(
             type="OPPORTUNISTIC",
+            replacement_method="RECREATE",
+            max_surge=compute_v1.FixedOrPercent(
+                fixed=0
+            ),
             instance_redistribution_type="NONE",
         ),
 
@@ -240,3 +273,7 @@ def create_region_managed_instance_group_request(project_id, region, instance_gr
     )
 
     return instance_group_manager_request    
+
+
+
+

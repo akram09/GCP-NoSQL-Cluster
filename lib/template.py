@@ -1,4 +1,3 @@
-import uuid
 from loguru import logger
 from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, disk_from_image
@@ -12,6 +11,7 @@ def create_template(
     machine_type: str,
     machine_image: compute_v1.types.compute.Image,
     disks, 
+    key,
     startup_script_url: str,
     shutdown_script_url: str
     ):
@@ -24,22 +24,7 @@ def create_template(
     Returns:
         InstanceTemplate object that represents the new instance template.
     """
-    logger.info("Creating instance template...")
-    # Create KMS key ring and symmetric encryption/decryption key
-    key_ring_id = f"key-ring-{template_name.replace('-template', '')}" 
-    logger.info(f"Checking key ring {key_ring_id} ...")
-    # check if key ring exists 
-    key_ring = get_key_ring(project_id, "global", key_ring_id)
-    if key_ring is None: 
-        logger.debug("Key ring does not exist, creating key ring")
-        key_ring = create_key_ring(project_id, "global", key_ring_id)
-
-    logger.info("Checking encryption key ...")
-    key_id = f"key-{template_name.replace('-template', '')}"
-    key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id+f"-{uuid.uuid4().hex}")
-    
-    # Add google API support in the template so that it can be used inside the vm
-
+    logger.info("Creating instance template...") 
 
     # The template connects the instance to the `default` network,
     # without specifying a subnetwork.
@@ -109,9 +94,10 @@ def update_template(
     template: compute_v1.InstanceTemplate,
     machine_type: str,
     machine_image: compute_v1.types.compute.Image,
-    disks_params,
+    disks_params,    
+    key,
     startup_script_url: str,
-    shutdown_script_url: str
+    shutdown_script_url: str,
     ) -> compute_v1.InstanceTemplate:
 
     logger.info(f"Updating instance template {template.name}...")
@@ -131,31 +117,21 @@ def update_template(
     # check disks 
     disks = template.properties.disks
 
-    boot_disk = disks[0]
-    extra_disk = disks[1]
+    # create list of new disks 
+    new_disks = list(map(lambda disk_params: disk_from_image(disk_params.type, disk_params.size, key, disk_params.boot, machine_image.self_link) , disks_params))
 
-    # check the boot disk properties 
-    if boot_disk.initialize_params.source_image != machine_image.self_link:
-        logger.debug("Boot disk image is different, updating boot disk image")
-        boot_disk.initialize_params.source_image = machine_image.self_link
-    if boot_disk.initialize_params.disk_size_gb != disk_size:
-        logger.debug("Boot disk size is different, updating boot disk size")
-        boot_disk.initialize_params.disk_size_gb = disk_size
-    if boot_disk.initialize_params.disk_type != disk_type:
-        logger.debug("Boot disk type is different, updating boot disk type") 
-        boot_disk.initialize_params.disk_type = disk_type
-
-    # check the extra disk properties
-    if extra_disk.initialize_params.source_image != machine_image.self_link:
-        logger.debug("Extra disk image is different, updating extra disk image")
-        extra_disk.initialize_params.source_image = machine_image.self_link
-    if extra_disk.initialize_params.disk_size_gb != extra_disk_size:
-        logger.debug("Extra disk size is different, updating extra disk size")
-        extra_disk.initialize_params.disk_size_gb = extra_disk_size
-    if extra_disk.initialize_params.disk_type != extra_disk_type:
-        logger.debug("Extra disk type is different, updating extra disk type")
-        extra_disk.initialize_params.disk_type = extra_disk_type
-
+    # compare disks 
+    for i,disk in enumerate(disks):
+        # check the boot disk properties 
+        if disk.initialize_params.source_image != new_disks[i].source_image:
+            logger.debug("Boot disk image is different, updating boot disk image")
+            disk.initialize_params.source_image = new_disks[i].source_image
+        if disk.initialize_params.disk_size_gb != new_disks[i].disk_size:
+            logger.debug("Boot disk size is different, updating boot disk size")
+            disk.initialize_params.disk_size_gb = new_disks[i].disk_size
+        if disk.initialize_params.disk_type != new_disks[i].disk_type:
+            logger.debug("Boot disk type is different, updating boot disk type") 
+            disk.initialize_params.disk_type = new_disks[i].disk_type
     # check the machine type
     if template.properties.machine_type != machine_type:
         logger.debug("Machine type is different, updating machine type")
