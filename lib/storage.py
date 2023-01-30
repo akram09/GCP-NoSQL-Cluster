@@ -3,15 +3,20 @@ from google.cloud import storage
 import os
 from jinja2 import Template
 
-def create_bucket(bucket_name):
+def create_bucket(bucket_name, location, key):
     """Creates a new bucket."""
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     if not bucket.exists():
-        bucket = storage_client.create_bucket(bucket_name)
+        bucket = storage_client.create_bucket(bucket_name, location=location)
+        # Set the bucket's default encryption key
         logger.info(f"Bucket {bucket.name} created.")
     else:
         logger.info(f"Bucket {bucket.name} exists.")
+
+    logger.info(f"Setting default encryption key for {bucket.name} bucket...")
+    bucket.default_kms_key_name = key.name
+    bucket.patch()
     return bucket
 
 
@@ -86,7 +91,7 @@ def list_blobs(bucket_name):
         print(blob.name)
 
 
-def upload_startup_script(project_id: str, image_family: str, bucket_name: str, cluster_name: str, cluster_size: int, secret_name: str):
+def upload_startup_script(project_id: str, image_family: str, bucket, cluster_name: str, cluster_size: int, secret_name: str):
     """Uploads the selected startup script base on image family, to the created bucket if not existing and return the startup script url."""
     logger.info(f"Uploading startup script for {image_family} image family...")
     
@@ -105,22 +110,6 @@ def upload_startup_script(project_id: str, image_family: str, bucket_name: str, 
         logger.error(f"Unsupported OS family: {dist}")
         raise("There is no startup script for the selected OS family.")
 
-    logger.info("Checking if the bucket exists else creating the bucket...")
-    # Create the bucket if not existed
-    bucket = create_bucket(bucket_name)
-
-    logger.info("Assigning read storage role to the bucket...") 
-    # Add Compute Engine default service account to the bucket
-    # read member from environment variable
-    member = {"user": os.environ['COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL']}
-    role = "roles/storage.objectViewer"
-
-    policy = bucket.get_iam_policy(requested_policy_version=3)
-
-    policy.bindings.append({"role": role, "members": [member]})
-
-    bucket.set_iam_policy(policy)
-    logger.debug(f"Added {member} to {bucket.name} with {role} role.")
 
     # read the template 
     with open(f"./bin/startup-scripts/{script_template}", "r") as f:
@@ -149,7 +138,7 @@ def upload_startup_script(project_id: str, image_family: str, bucket_name: str, 
 
 
 # uploading shutdown scripts
-def upload_shutdown_script(project_id: str, image_family: str, bucket_name: str):
+def upload_shutdown_script(project_id: str, image_family: str, bucket):
     """Uploads the shutdown script based on the image family"""
     logger.info(f"Uploading shutdown script for {image_family} image family...")
 
@@ -168,24 +157,6 @@ def upload_shutdown_script(project_id: str, image_family: str, bucket_name: str)
     else:
         logger.error(f"Unsupported OS family: {dist}")
         raise("There is no shutdown script for the selected OS family.")
-
-    logger.info("Checking if the bucket exists else creating the bucket...")
-    # Create the bucket if not existed
-    bucket = create_bucket(bucket_name)
-
-    logger.info("Assigning read storage role to the bucket...") 
-    # Add Compute Engine default service account to the bucket
-    # read member from environment variable
-    member = {"user": os.environ['COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL']}
-    role = "roles/storage.objectViewer"
-
-    policy = bucket.get_iam_policy(requested_policy_version=3)
-
-    policy.bindings.append({"role": role, "members": [member]})
-
-    bucket.set_iam_policy(policy)
-    logger.debug(f"Added {member} to {bucket.name} with {role} role.")
-
     # read the template 
     with open(f"./bin/shutdown-scripts/{script_template}", "r") as f:
         template = Template(f.read())

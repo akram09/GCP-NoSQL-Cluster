@@ -1,4 +1,4 @@
-from utils.env import get_env_project_id, check_application_credentials, check_compute_engine_service_account_email
+from utils.env import get_env_project_id, check_application_credentials, check_compute_engine_service_account_email, check_storage_service_account_email 
 from loguru import logger
 from entities.gcp_project import GCPProject
 
@@ -13,6 +13,20 @@ def check_gcp_params(args):
         except Exception as e:
             logger.error(e)
             exit(1)
+    # check compute service account 
+    try:
+        check_compute_engine_service_account_email()
+    except Exception as e:
+        logger.error(e)
+        exit(1)
+
+    # check storage service account
+    try:
+        check_storage_service_account_email()
+    except Exception as e:
+        logger.error(e)
+        exit(1)
+
     # check authentication 
     if args.authentication_type == "service-account":
         logger.info("Authentication type set to use service account")

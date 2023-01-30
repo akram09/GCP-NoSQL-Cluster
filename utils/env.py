@@ -18,7 +18,6 @@ def get_env_project_id():
         return os.environ.get("GOOGLE_CLOUD_PROJECT") 
 
 
-
 # checking application credentials
 def check_application_credentials():
     if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ:
@@ -35,19 +34,11 @@ def check_compute_engine_service_account_email():
         if os.environ.get("COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL") =="":
             raise Exception("COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL environment variable is empty")
 
-
-def load_project_env():
-    # check environment variables
-    try:
-        check_env()
-    except Exception as e:
-        logger.error(e)
-        exit(1)
-    # get environment variables
-    project = os.environ.get("GOOGLE_CLOUD_PROJECT")
-    zone = os.environ.get("GOOGLE_CLOUD_ZONE")
-    compute_engine_service_account = os.environ.get("COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL")
-
-    return GCPProject(project, zone, compute_engine_service_account)
-
+# checking storage service account email 
+def check_storage_service_account_email():
+    if "CLOUD_STORAGE_SERVICE_ACCOUNT_EMAIL" not in os.environ:
+        raise Exception("Please set CLOUD_STORAGE_SERVICE_ACCOUNT_EMAIL environment variable")
+    else:
+        if os.environ.get("CLOUD_STORAGE_SERVICE_ACCOUNT_EMAIL") =="":
+            raise Exception("CLOUD_STORAGE_SERVICE_ACCOUNT_EMAIL environment variable is empty")
     

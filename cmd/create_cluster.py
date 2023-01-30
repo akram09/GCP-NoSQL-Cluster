@@ -1,3 +1,4 @@
+import os 
 import uuid
 from loguru import logger
 from utils.shared import check_gcp_params
@@ -5,7 +6,7 @@ from utils.args import cluster_from_args
 from lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances, region_adding_instances, get_region_managed_instance_group, region_scaling_mig
 from lib.template import create_template, get_instance_template, update_template
 from lib.firewall import create_firewall_rule, check_firewall_rule
-from lib.storage import upload_startup_script, upload_shutdown_script
+from lib.storage import upload_startup_script, upload_shutdown_script, create_bucket
 from lib.secrets_manager import check_secret, create_secret, add_latest_secret_version
 from lib.kms import create_key_ring, create_key_symmetric_encrypt_decrypt, get_key_ring, get_key_symmetric_encrypt_decrypt, is_key_enabled
 from utils.gcp import get_image_from_family
@@ -30,11 +31,15 @@ def create_cluster(args):
 
     # checking encryption keys
     logger.info("Checking encryption keys ...")
-    key = setup_encryption_keys(project.project_id, cluster.name)
+    key = setup_encryption_keys(project.project_id, cluster.name, cluster.region)
+
+    # checking cloud storage
+    logger.info("Checking cloud storage ...")
+    bucket = setup_cloud_storage(cluster.storage, cluster.region, key)
 
     # upload scripts 
     logger.info("Uploading scripts ...")
-    scripts = upload_scripts(project, cluster.storage, cluster.template, cluster, secret_name)
+    scripts = upload_scripts(project, bucket, cluster.template, cluster, secret_name)
 
     # setup instance template
     logger.info("Checking instance template ...")
@@ -61,21 +66,41 @@ def create_cluster(args):
 
 
 
-def setup_encryption_keys(project_id, cluster_name):
+def setup_encryption_keys(project_id, cluster_name, region):
     # Create KMS key ring and symmetric encryption/decryption key
     key_ring_id = f"key-ring-{cluster_name}" 
     logger.info(f"Checking key ring {key_ring_id} ...")
     # check if key ring exists 
-    key_ring = get_key_ring(project_id, "global", key_ring_id)
+    key_ring = get_key_ring(project_id, region, key_ring_id)
     if key_ring is None: 
         logger.debug("Key ring does not exist, creating key ring")
-        key_ring = create_key_ring(project_id, "global", key_ring_id)
+        key_ring = create_key_ring(project_id, region, key_ring_id)
 
     logger.info("Checking encryption key ...")
     key_id = f"key-{cluster_name}"
-    key = create_key_symmetric_encrypt_decrypt(project_id, "global", key_ring_id, key_id+f"-{uuid.uuid4().hex}")
+    key = create_key_symmetric_encrypt_decrypt(project_id, region, key_ring_id, key_id+f"-{uuid.uuid4().hex}")
     return key
 
+
+def setup_cloud_storage(storage_params, region, key):
+    logger.info("Checking if the bucket exists else creating the bucket...")
+    # Create the bucket if not existed
+    bucket = create_bucket(storage_params.bucket, region, key)
+
+    logger.info("Assigning read storage role to the bucket...") 
+    # Add Compute Engine default service account to the bucket
+    # read member from environment variable
+    member = {"user": os.environ['COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL']}
+    role = "roles/storage.objectViewer"
+
+    policy = bucket.get_iam_policy(requested_policy_version=3)
+
+    policy.bindings.append({"role": role, "members": [member]})
+
+    bucket.set_iam_policy(policy)
+    logger.debug(f"Added {member} to {bucket.name} with {role} role.")
+
+    return bucket
 
 
 def setup_secret_manager(project, cluster, couchbase_params):
@@ -116,11 +141,11 @@ def scale_mig(project, cluster, mig):
 
 
 
-def upload_scripts(project, storage_params, template_params, cluster_params, secret_name):
+def upload_scripts(project, bucket, template_params, cluster_params, secret_name):
     # upload the startup script to the bucket
-    startup_script_url = upload_startup_script(project.project_id, template_params.image_family, storage_params.bucket, cluster_params.name, cluster_params.size, secret_name)
+    startup_script_url = upload_startup_script(project.project_id, template_params.image_family, bucket, cluster_params.name, cluster_params.size, secret_name)
     # upload the shutdown script to the bucket
-    shutdown_script_url = upload_shutdown_script(project.project_id, template_params.image_family, storage_params.bucket)
+    shutdown_script_url = upload_shutdown_script(project.project_id, template_params.image_family, bucket)
 
     return {
         "startup_script_url": startup_script_url,

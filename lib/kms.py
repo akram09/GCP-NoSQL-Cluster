@@ -1,3 +1,4 @@
+import os 
 from loguru import logger
 from google.cloud import kms
 
@@ -91,7 +92,32 @@ def create_key_symmetric_encrypt_decrypt(project_id, location_id, key_ring_id, k
     # Call the API.
     created_key = client.create_crypto_key(
         request={'parent': key_ring_name, 'crypto_key_id': key_id, 'crypto_key': key})
+    assign_permission_to_storage(project_id, key_ring_id, key_id, location_id)
     return created_key
+
+
+def assign_permission_to_storage(project_id, key_ring_id, key_id, location):
+    logger.info(f"Assigning permission to storage for key {key_id} in key ring {key_ring_id} in project {project_id}")
+    client = kms.KeyManagementServiceClient()
+    key_name = client.crypto_key_path(project_id, location, key_ring_id, key_id)
+
+    # Build the policy
+    policy = client.get_iam_policy(request={'resource': key_name})
+
+
+    # get cloud storage service account from env 
+    service_account = os.environ.get('CLOUD_STORAGE_SERVICE_ACCOUNT_EMAIL')
+
+    policy.bindings.add(
+        role='roles/cloudkms.cryptoKeyEncrypterDecrypter',
+        members=[f'serviceAccount:{service_account}']
+    )
+
+    # Call the API.
+    updated_policy = client.set_iam_policy(request={'resource': key_name, 'policy': policy})
+    logger.success(f"Assigned permission to storage for key {key_id} in key ring {key_ring_id} in project {project_id}")
+
+
 
 # get key by key ring id and key id 
 def get_key_symmetric_encrypt_decrypt(project_id, location_id, key_ring_id, key_id):
