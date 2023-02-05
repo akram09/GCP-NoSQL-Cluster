@@ -8,22 +8,56 @@ from utils.gcp import wait_for_extended_operation, get_image_from_family
 
 # update the managed instance group
 def update_region_managed_instance_group(project_id, region, instance_group_name, instance_template):
+# PATCH https://www.googleapis.com/compute/beta/projects/upwork-python-automation/regions/europe-west9/instanceGroupManagers/mig-7
+# {
+#   "updatePolicy": {
+#     "maxSurge": {
+#       "fixed": 0
+#     },
+#     "maxUnavailable": {
+#       "fixed": 3
+#     },
+#     "minReadySec": 0,
+#     "minimalAction": "REPLACE",
+#     "mostDisruptiveAllowedAction": "REPLACE",
+#     "replacementMethod": "RECREATE",
+#     "type": "OPPORTUNISTIC"
+#   },
+#   "versions": [
+#     {
+#       "instanceTemplate": "projects/upwork-python-automation/global/instanceTemplates/mig-7-template-1",
+#       "name": "0-1675598354441"
+#     }
+#   ]
+# }
     logger.info(f"Updating managed instance group {instance_group_name}")
     # create instance group manager client
     instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
-    apply_update_request = compute_v1.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest(
+    # create a patch request to update the instance group manager with new instance template
+    patch_request = compute_v1.PatchRegionInstanceGroupManagerRequest(
         project=project_id,
         region=region,
         instance_group_manager=instance_group_name,
-        region_instance_group_managers_apply_updates_request_resource={
-            "minimal_action": "REPLACE",
-            "most_disruptive_allowed_action": "REPLACE",
+        instance_group_manager_resource={
+            "versions": [
+                compute_v1.InstanceGroupManagerVersion(
+                    instance_template=instance_template.self_link,
+                    name="0-{}".format(int(time.time())),
+                )
+            ],
+            "update_policy": {
+                "minimal_action": "REPLACE",
+                "most_disruptive_allowed_action": "REPLACE",
+                "replacement_method": "RECREATE",
+                "type": "OPPORTUNISTIC",
+                "max_surge": {"fixed": 0},
+            }
         },
     )
+
     # update instance group manager
-    operation = instance_group_manager_client.apply_updates_to_instances(
-        request=apply_update_request
-    )
+    operation = instance_group_manager_client.patch(request=patch_request)
+
     # wait for operation to complete
     try:
         wait_for_extended_operation(operation, project_id)
@@ -31,6 +65,13 @@ def update_region_managed_instance_group(project_id, region, instance_group_name
         logger.error(f"Error updating managed instance group: {e}")
         raise e
     logger.success(f"Managed instance group {instance_group_name} updated")
+
+    # get instance group manager
+    instance_group_manager = instance_group_manager_client.get(
+        project=project_id, region=region, instance_group_manager=instance_group_name
+    )    
+    # return instance group manager
+    return instance_group_manager
 
 
 # create managed instance group 
@@ -175,7 +216,6 @@ def region_scaling_mig(
                 ]
             },
         )
-        print(delete_instance_request)
         # delete instances
         operation = instance_group_manager_client.delete_instances(
             request=delete_instance_request
@@ -226,7 +266,17 @@ def create_region_managed_instance_group_request(project_id, region, instance_gr
     instance_group_manager_request.region = region
     # create distribution policy
     distribution_policy = compute_v1.DistributionPolicy()
-    
+
+    print(instance_template.properties.disks)   
+
+    # create stateful policy for additional disks without boot disk
+    stateful_policy = compute_v1.StatefulPolicy()
+    stateful_policy.preserved_state = compute_v1.StatefulPolicyPreservedState()
+    stateful_policy.preserved_state.disks = {}
+    for disk in instance_template.properties.disks:
+        if disk.boot == False:
+            stateful_policy.preserved_state.disks[disk.device_name] = compute_v1.StatefulPolicyPreservedStateDiskDevice(auto_delete="never")
+
     # set target shape 
     distribution_policy.target_shape = "BALANCED"
 
@@ -236,21 +286,7 @@ def create_region_managed_instance_group_request(project_id, region, instance_gr
         instance_template=instance_template.self_link,
         target_size=target_size,
         # add stateful policy to instance group manager
-        stateful_policy=compute_v1.StatefulPolicy(
-            preserved_state=compute_v1.StatefulPolicyPreservedState(
-                disks=
-                    {
-                        "persistent-disk-0" : 
-                            compute_v1.StatefulPolicyPreservedStateDiskDevice(
-                                auto_delete="never"
-                            ),
-                        "persistent-disk-1" : 
-                            compute_v1.StatefulPolicyPreservedStateDiskDevice(
-                                auto_delete="never"
-                            )
-                    }
-            )
-        ),
+        stateful_policy=stateful_policy,
         # set distribution policy to the MIG 
         distribution_policy=distribution_policy,
         # set update policy 
@@ -271,7 +307,6 @@ def create_region_managed_instance_group_request(project_id, region, instance_gr
         #     )
         # ],
     )
-
     return instance_group_manager_request    
 
 

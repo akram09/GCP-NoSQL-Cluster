@@ -110,7 +110,7 @@ def update_template(
     try:
         wait_for_extended_operation(operation, "deleting old instance template")
     except:
-        logger.debug("The template is being used by a mig")
+        logger.debug("The template is already being used by a managed instance group, so we can't delete it")
         return template
 
 
@@ -123,15 +123,15 @@ def update_template(
     # compare disks 
     for i,disk in enumerate(disks):
         # check the boot disk properties 
-        if disk.initialize_params.source_image != new_disks[i].source_image:
+        if disk.initialize_params.source_image != new_disks[i].initialize_params.source_image:
             logger.debug("Boot disk image is different, updating boot disk image")
-            disk.initialize_params.source_image = new_disks[i].source_image
-        if disk.initialize_params.disk_size_gb != new_disks[i].disk_size:
+            disk.initialize_params.source_image = new_disks[i].initialize_params.source_image
+        if disk.initialize_params.disk_size_gb != new_disks[i].initialize_params.disk_size_gb:
             logger.debug("Boot disk size is different, updating boot disk size")
-            disk.initialize_params.disk_size_gb = new_disks[i].disk_size
-        if disk.initialize_params.disk_type != new_disks[i].disk_type:
+            disk.initialize_params.disk_size_gb = new_disks[i].initialize_params.disk_size_gb
+        if disk.initialize_params.disk_type != new_disks[i].initialize_params.disk_type:
             logger.debug("Boot disk type is different, updating boot disk type") 
-            disk.initialize_params.disk_type = new_disks[i].disk_type
+            disk.initialize_params.disk_type = new_disks[i].initialize_params.disk_type
     # check the machine type
     if template.properties.machine_type != machine_type:
         logger.debug("Machine type is different, updating machine type")

@@ -168,6 +168,7 @@ def upload_shutdown_script(project_id: str, image_family: str, bucket):
     with open(f"./bin/shutdown-scripts/{shutdown_script}", "w") as f:
         f.write(rendered_template)
 
+
     # upload the startup script to the bucket
     shutdown_script_url = upload_blob(bucket.name, os.path.abspath(f"bin/shutdown-scripts/{shutdown_script}"), shutdown_script)
 

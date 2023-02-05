@@ -2,12 +2,12 @@
 cluster:
   name: mig-7
   region: europe-west9
-  size: 2
+  size: 4
   couchbase:
     username: kero
     password: password
   template:
-    name: mig-7-template-1
+    name: mig-7-template-2
     image_project: debian-cloud
     image_family: debian-11
     machine_type: e2-micro

@@ -37,6 +37,14 @@ if [[ $(hostname -a) == mig-7-000 ]]; then
     /opt/couchbase/bin/couchbase-cli server-add -c mig-7-000.c.upwork-python-automation.internal:8091 --server-add=mig-7-001.c.upwork-python-automation.internal:8091 --server-add-username=$COUCHBASE_USER --server-add-password=$COUCHBASE_PASSWORD --username=$COUCHBASE_USER --password=$COUCHBASE_PASSWORD
 
     
+      # Add nodes
+    /opt/couchbase/bin/couchbase-cli server-add -c mig-7-000.c.upwork-python-automation.internal:8091 --server-add=mig-7-002.c.upwork-python-automation.internal:8091 --server-add-username=$COUCHBASE_USER --server-add-password=$COUCHBASE_PASSWORD --username=$COUCHBASE_USER --password=$COUCHBASE_PASSWORD
+
+    
+      # Add nodes
+    /opt/couchbase/bin/couchbase-cli server-add -c mig-7-000.c.upwork-python-automation.internal:8091 --server-add=mig-7-003.c.upwork-python-automation.internal:8091 --server-add-username=$COUCHBASE_USER --server-add-password=$COUCHBASE_PASSWORD --username=$COUCHBASE_USER --password=$COUCHBASE_PASSWORD
+
+    
     # Rebalance
     /opt/couchbase/bin/couchbase-cli rebalance -c mig-7-000.c.upwork-python-automation.internal:8091 -u $COUCHBASE_USER -p $COUCHBASE_PASSWORD
 else
