@@ -123,8 +123,9 @@ def update_template(
     operation = template_client.delete(project=project_id, instance_template=template.name)
     try:
         wait_for_extended_operation(operation, "deleting old instance template")
-    except:
-        logger.debug("The template is already being used by a managed instance group, so we can't delete it")
+    except Exception as e:
+        logger.warning("Failed to delete old instance template, trying to create new one")
+        logger.error(e)
         return template
 
 
@@ -195,7 +196,9 @@ def get_instance_template(
     # if thrown then return None
     try:
         return template_client.get(project=project_id, instance_template=template_name)
-    except:
+    except Exception as e:
+        logger.error("Instance template not found")
+        logger.error(e)
         return None
 
 

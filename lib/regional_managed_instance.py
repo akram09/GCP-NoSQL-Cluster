@@ -104,7 +104,7 @@ def get_region_managed_instance_group(instance_group_manager_client, project_id,
         logger.debug("Managed instance group exists")
         return instance_group_manager
     except Exception as e:
-        logger.debug("Managed instance group does not exist")
+        logger.error(e)
         return None
 
 
