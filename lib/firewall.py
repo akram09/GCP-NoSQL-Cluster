@@ -1,17 +1,27 @@
 import sys
 from typing import Any
-
 from google.api_core.extended_operation import ExtendedOperation
 from google.cloud import compute_v1
-
+import google.oauth2.credentials
 from utils.gcp import wait_for_extended_operation
 
 
+# create firewalls client
+def create_firewalls_client(project):
+    # check if auth type is oauth
+    if project.auth_type == "oauth":
+        # get the service token
+        service_token = project.service_token
+        # create auth credentials
+        credentials = google.oauth2.credentials.Credentials(token=service_token)
+        return compute_v1.FirewallsClient(credentials=credentials)
+    # create the firewalls client
+    return compute_v1.FirewallsClient()
 
 
-# TODO this can be updated with specific values  
 # Create a firewall rule 
 def create_firewall_rule(
+    firewall_client, 
     project_id: str, firewall_rule_name: str, network: str = "global/networks/default"
 ):
     """
@@ -40,7 +50,6 @@ def create_firewall_rule(
     # TODO: Uncomment to set the priority to 0
     # firewall_rule.priority = 0
 
-    firewall_client = compute_v1.FirewallsClient()
     operation = firewall_client.insert(
         project=project_id, firewall_resource=firewall_rule
     )
@@ -49,9 +58,7 @@ def create_firewall_rule(
 
 
 # Check if the firewall rule exists 
-def check_firewall_rule(project_id: str, firewall_rule_name: str) -> bool:
-    # create a firewall client
-    firewall_client = compute_v1.FirewallsClient()
+def check_firewall_rule(firewall_client, project_id: str, firewall_rule_name: str) -> bool:
 
     # check if the firewall rule exists
     try:

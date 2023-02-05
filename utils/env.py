@@ -26,6 +26,16 @@ def check_application_credentials():
         if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") =="":
             raise Exception("GOOGLE_APPLICATION_CREDENTIALS environment variable is empty")
 
+
+# checking service account oauth token
+def check_service_account_oauth_token():
+    if "SERVICE_ACCOUNT_OAUTH_TOKEN" not in os.environ:
+        raise Exception("Please set SERVICE_ACCOUNT_OAUTH_TOKEN environment variable")
+    else:
+        if os.environ.get("SERVICE_ACCOUNT_OAUTH_TOKEN") =="":
+            raise Exception("SERVICE_ACCOUNT_OAUTH_TOKEN environment variable is empty")
+
+
 # checking compute engine service account email
 def check_compute_engine_service_account_email():
     if "COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL" not in os.environ:

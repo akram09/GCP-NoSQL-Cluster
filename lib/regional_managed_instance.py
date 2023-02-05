@@ -3,36 +3,23 @@ import time
 from lib.template import get_instance_template
 from google.cloud import compute_v1
 from utils.gcp import wait_for_extended_operation, get_image_from_family
+import google.oauth2.credentials
 
+# create region instance group managers client 
+def create_region_instance_group_managers_client(project):
+    # check if auth type is oauth
+    if project.auth_type == "oauth":
+        # get the service token
+        service_token = project.service_token
+        # create auth credentials
+        credentials = google.oauth2.credentials.Credentials(token=service_token)
+        return compute_v1.RegionInstanceGroupManagersClient(credentials=credentials)
+    return compute_v1.RegionInstanceGroupManagersClient()
 
 
 # update the managed instance group
-def update_region_managed_instance_group(project_id, region, instance_group_name, instance_template):
-# PATCH https://www.googleapis.com/compute/beta/projects/upwork-python-automation/regions/europe-west9/instanceGroupManagers/mig-7
-# {
-#   "updatePolicy": {
-#     "maxSurge": {
-#       "fixed": 0
-#     },
-#     "maxUnavailable": {
-#       "fixed": 3
-#     },
-#     "minReadySec": 0,
-#     "minimalAction": "REPLACE",
-#     "mostDisruptiveAllowedAction": "REPLACE",
-#     "replacementMethod": "RECREATE",
-#     "type": "OPPORTUNISTIC"
-#   },
-#   "versions": [
-#     {
-#       "instanceTemplate": "projects/upwork-python-automation/global/instanceTemplates/mig-7-template-1",
-#       "name": "0-1675598354441"
-#     }
-#   ]
-# }
+def update_region_managed_instance_group(instance_group_manager_client, project_id, region, instance_group_name, instance_template):
     logger.info(f"Updating managed instance group {instance_group_name}")
-    # create instance group manager client
-    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
     # create a patch request to update the instance group manager with new instance template
     patch_request = compute_v1.PatchRegionInstanceGroupManagerRequest(
         project=project_id,
@@ -75,10 +62,8 @@ def update_region_managed_instance_group(project_id, region, instance_group_name
 
 
 # create managed instance group 
-def create_region_managed_instance_group(project_id, region, instance_group_name, instance_template):
+def create_region_managed_instance_group(instance_group_manager_client, project_id, region, instance_group_name, instance_template):
     logger.info(f"Creating managed instance group {instance_group_name} with zero instances")
-    # create instance group manager client
-    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
     # create instance group manager request
     instance_group_manager_request = create_region_managed_instance_group_request(project_id, region, instance_group_name, instance_template, 0)
     # create instance group manager
@@ -109,10 +94,8 @@ def create_region_managed_instance_group(project_id, region, instance_group_name
     return instance_group_manager
 
 
-def get_region_managed_instance_group(project_id, region, instance_group_name):
+def get_region_managed_instance_group(instance_group_manager_client, project_id, region, instance_group_name):
     logger.info("Checking if the managed instance group exists ...")
-    # create instance group manager client
-    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
     # get instance group manager
     try:
         instance_group_manager = instance_group_manager_client.get(
@@ -127,11 +110,10 @@ def get_region_managed_instance_group(project_id, region, instance_group_name):
 
 # adding custom instances to the managed instance group 
 def region_adding_instances(
+    instance_group_manager_client,
     project_id, region, instance_group_manager, size
     ):
     logger.debug(f"Adding {size} instances to the managed instance group {instance_group_manager.name}")
-    # get client 
-    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
     # create an instance group managers create instance request
     create_instance_request = compute_v1.CreateInstancesRegionInstanceGroupManagerRequest(
         project=project_id,
@@ -163,11 +145,10 @@ def region_adding_instances(
 
 # scaling up the mig or down
 def region_scaling_mig(
+    instance_group_manager_client,
     project_id, region, instance_group_manager, size, wanted_size
     ):
     logger.debug(f"Scaling managed instance group {instance_group_manager.name} from {size} to {wanted_size} instances")
-    # get client 
-    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
     if size < wanted_size: 
         # create an instance group managers create instance request
         create_instance_request = compute_v1.CreateInstancesRegionInstanceGroupManagerRequest(
@@ -197,7 +178,7 @@ def region_scaling_mig(
         logger.success(f"Instances scaled")
     elif size > wanted_size:
         # list all the instances to get the zone of the instances to delete 
-        managed_instances =  list_region_instances(project_id, region, instance_group_manager.name)
+        managed_instances =  list_region_instances(instance_group_manager_client, project_id, region, instance_group_manager.name)
         instances_zones = [ {"name": managed_instance.instance, "index": int(managed_instance.instance.split('/')[-1].split('-')[-1]) } for managed_instance in managed_instances]
         # sort the instances by index
         instances_zones.sort(key=lambda x: x['index'])
@@ -230,9 +211,7 @@ def region_scaling_mig(
 
 
 # list instances of an instance group manager
-def list_region_instances(project_id, region, instance_group_name):
-    # create instance group manager client
-    instance_group_manager_client = compute_v1.RegionInstanceGroupManagersClient()
+def list_region_instances(instance_group_manager_client, project_id, region, instance_group_name):
     # create instance group manager request
     instance_group_manager_request = compute_v1.ListManagedInstancesRegionInstanceGroupManagersRequest(
         project=project_id, region=region, instance_group_manager=instance_group_name
@@ -267,7 +246,6 @@ def create_region_managed_instance_group_request(project_id, region, instance_gr
     # create distribution policy
     distribution_policy = compute_v1.DistributionPolicy()
 
-    print(instance_template.properties.disks)   
 
     # create stateful policy for additional disks without boot disk
     stateful_policy = compute_v1.StatefulPolicy()

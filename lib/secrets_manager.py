@@ -1,14 +1,28 @@
+import os
 import google_crc32c
 from google.cloud import secretmanager
 from loguru import logger
+import google.oauth2.credentials
 
+
+# create secret Manager Service Client 
+def create_secret_manager_client(project):
+    # check if auth type is oauth 
+    if project.auth_type == "oauth":
+        # get the service token
+        service_token = project.service_token
+        # create auth credentials
+        credentials = google.oauth2.credentials.Credentials(token=service_token)
+        return secretmanager.SecretManagerServiceClient(credentials=credentials)
+    # create the secret manager client
+    client = secretmanager.SecretManagerServiceClient()
+    return client
+    
 
 
 # check if the secret exists
-def check_secret(project_id, secret_name):
+def check_secret(client, project_id, secret_name):
     logger.info(f"Checking if {secret_name} exists...") 
-    # get the secret manager client
-    client = secretmanager.SecretManagerServiceClient()
     # get the secret name
     name = client.secret_path(project_id, secret_name)
     # try to get the secret
@@ -22,11 +36,8 @@ def check_secret(project_id, secret_name):
 
 
 # create the secret
-def create_secret(project_id, secret_name):
+def create_secret(client, project_id, secret_name):
     logger.info(f"Creating secret {secret_name}...")
-    # create secret manager client
-    client = secretmanager.SecretManagerServiceClient()
-
     # Build the parent resource name
     parent = f"projects/{project_id}"
 
@@ -38,10 +49,7 @@ def create_secret(project_id, secret_name):
 
 
 # add the secret version
-def add_latest_secret_version(project_id, secret_name, secret_value):
-   
-    # get the secret manager client
-    client = secretmanager.SecretManagerServiceClient()
+def add_latest_secret_version(client, project_id, secret_name, secret_value):
 
     # Build the resource name
     parent = client.secret_path(project_id, secret_name)

@@ -4,8 +4,23 @@ from utils.gcp import wait_for_extended_operation, disk_from_image
 from typing import Iterable
 from lib.kms import create_key_ring, create_key_symmetric_encrypt_decrypt, get_key_ring, get_key_symmetric_encrypt_decrypt, is_key_enabled
 import os
+import google.oauth2.credentials
+
+# create instance templates client 
+def create_instance_templates_client(project): 
+    # check if auth type is oauth
+    if project.auth_type == "oauth":
+        # get the service token
+        service_token = project.service_token
+        # create auth credentials
+        credentials = google.oauth2.credentials.Credentials(token=service_token)
+        return compute_v1.InstanceTemplatesClient(credentials=credentials)
+    # create the instance templates client
+    return compute_v1.InstanceTemplatesClient()
+
 
 def create_template(
+    client,
     project_id: str,
     template_name: str,
     machine_type: str,
@@ -75,21 +90,21 @@ def create_template(
     template.properties.metadata = metadata
 
 
-    template_client = compute_v1.InstanceTemplatesClient()
-    operation = template_client.insert(
+    operation = client.insert(
         project=project_id, instance_template_resource=template
     )
 
     wait_for_extended_operation(operation, "instance template creation")
     logger.success("Instance template created!")
 
-    return template_client.get(project=project_id, instance_template=template_name)
+    return client.get(project=project_id, instance_template=template_name)
 
 
 
 
 # update template 
 def update_template(
+    template_client,
     project_id: str,
     template: compute_v1.InstanceTemplate,
     machine_type: str,
@@ -104,7 +119,6 @@ def update_template(
     logger.info(f"Because gcp doesn't support updating an instance template we will delete the first and create new one with updated values")
     
 
-    template_client = compute_v1.InstanceTemplatesClient()
     # delete the old template 
     operation = template_client.delete(project=project_id, instance_template=template.name)
     try:
@@ -164,6 +178,7 @@ def update_template(
 
 
 def get_instance_template(
+    template_client,
     project_id: str, template_name: str
 ) -> compute_v1.InstanceTemplate:
     """
@@ -176,7 +191,6 @@ def get_instance_template(
         InstanceTemplate object that represents the retrieved template.
     """
     logger.info("Retrieving instance template...")
-    template_client = compute_v1.InstanceTemplatesClient()
     # try to get template by name if an exception of 404 
     # if thrown then return None
     try:
@@ -185,7 +199,7 @@ def get_instance_template(
         return None
 
 
-def list_instance_templates(project_id: str) -> Iterable[compute_v1.InstanceTemplate]:
+def list_instance_templates(template_client, project_id: str) -> Iterable[compute_v1.InstanceTemplate]:
     """
     Get a list of InstanceTemplate objects available in a project.
     Args:
@@ -193,18 +207,16 @@ def list_instance_templates(project_id: str) -> Iterable[compute_v1.InstanceTemp
     Returns:
         Iterable list of InstanceTemplate objects.
     """
-    template_client = compute_v1.InstanceTemplatesClient()
     return template_client.list(project=project_id)
 
 
-def delete_instance_template(project_id: str, template_name: str):
+def delete_instance_template(template_client, project_id: str, template_name: str):
     """
     Delete an instance template.
     Args:
         project_id: project ID or project number of the Cloud project you use.
         template_name: name of the template to delete.
     """
-    template_client = compute_v1.InstanceTemplatesClient()
     operation = template_client.delete(
         project=project_id, instance_template=template_name
     )
@@ -212,13 +224,13 @@ def delete_instance_template(project_id: str, template_name: str):
     return
 
 
-def delete_all_templates(project_id):
+def delete_all_templates(template_client, project_id):
     """
     Delete all instance templates in a project.
     Args:
         project_id: project ID or project number of the Cloud project you use.
     """
-    for template in list_instance_templates(project_id):
-        delete_instance_template(project_id, template.name)
+    for template in list_instance_templates(template_client, project_id):
+        delete_instance_template(template_client, project_id, template.name)
     print("All templates are deleted.")
 
