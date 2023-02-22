@@ -1,10 +1,49 @@
 from loguru import logger
 from google.cloud import compute_v1
-from utils.gcp import wait_for_extended_operation, disk_from_image
+from utils.shared import wait_for_extended_operation
+from lib.disks import  disk_from_image
 from typing import Iterable
 from lib.kms import create_key_ring, create_key_symmetric_encrypt_decrypt, get_key_ring, get_key_symmetric_encrypt_decrypt, is_key_enabled
 import os
 import google.oauth2.credentials
+
+
+
+# public function 
+def create_template(project, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url):
+    client = create_instance_templates_client(project)
+    return __create_template(client, project.project_id, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url)
+
+
+
+# public function 
+def update_template(project, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url):
+    client = create_instance_templates_client(project)
+    return __update_template(client, project.project_id, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url)
+
+
+
+# public function 
+def get_instance_template(project, template_name):
+    client = create_instance_templates_client(project)
+    return __get_instance_template(client, project.project_id, template_name)
+
+# public function 
+def list_instance_templates(project):
+    client = create_instance_templates_client(project)
+    return __list_instance_templates(client, project.project_id)
+
+# public function 
+def delete_instance_template(project, template_name):
+    client = create_instance_templates_client(project)
+    return __delete_instance_template(client, project.project_id, template_name)
+
+# public function 
+def delete_all_templates(project):
+    client = create_instance_templates_client(project)
+    return __delete_all_templates(client, project.project_id)
+
+
 
 # create instance templates client 
 def create_instance_templates_client(project): 
@@ -19,7 +58,7 @@ def create_instance_templates_client(project):
     return compute_v1.InstanceTemplatesClient()
 
 
-def create_template(
+def __create_template(
     client,
     project_id: str,
     template_name: str,
@@ -73,6 +112,8 @@ def create_template(
     service_account.email = email
     service_account.scopes = [
         "https://www.googleapis.com/auth/devstorage.read_only",
+        # secrets access 
+        "https://www.googleapis.com/auth/cloud-platform"
     ]
     template.properties.service_accounts = [service_account]
     # set the startup script url in the metadata
@@ -85,6 +126,11 @@ def create_template(
         {
             "key": "shutdown-script-url",
             "value": shutdown_script_url
+        },
+        # use global dns 
+        {
+            "key": "VmDnsSetting",
+            "value": "global"
         }
     ]
     template.properties.metadata = metadata
@@ -103,7 +149,7 @@ def create_template(
 
 
 # update template 
-def update_template(
+def __update_template(
     template_client,
     project_id: str,
     template: compute_v1.InstanceTemplate,
@@ -178,7 +224,7 @@ def update_template(
     
 
 
-def get_instance_template(
+def __get_instance_template(
     template_client,
     project_id: str, template_name: str
 ) -> compute_v1.InstanceTemplate:
@@ -202,7 +248,7 @@ def get_instance_template(
         return None
 
 
-def list_instance_templates(template_client, project_id: str) -> Iterable[compute_v1.InstanceTemplate]:
+def __list_instance_templates(template_client, project_id: str) -> Iterable[compute_v1.InstanceTemplate]:
     """
     Get a list of InstanceTemplate objects available in a project.
     Args:
@@ -213,7 +259,7 @@ def list_instance_templates(template_client, project_id: str) -> Iterable[comput
     return template_client.list(project=project_id)
 
 
-def delete_instance_template(template_client, project_id: str, template_name: str):
+def __delete_instance_template(template_client, project_id: str, template_name: str):
     """
     Delete an instance template.
     Args:
@@ -227,7 +273,7 @@ def delete_instance_template(template_client, project_id: str, template_name: st
     return
 
 
-def delete_all_templates(template_client, project_id):
+def __delete_all_templates(template_client, project_id):
     """
     Delete all instance templates in a project.
     Args:

@@ -8,8 +8,8 @@ cluster:
     password: password
   template:
     name: mig-7-template
-    image_project: debian-cloud
-    image_family: debian-11
+    image_project: ubuntu-os-cloud
+    image_family: ubuntu-1804-lts
     machine_type: e2-micro
     disks:
       - type: pd-standard

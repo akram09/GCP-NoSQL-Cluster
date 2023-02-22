@@ -5,6 +5,102 @@ from jinja2 import Template
 import google.oauth2.credentials
 
 
+
+
+
+
+
+
+
+
+
+def setup_cloud_storage(project, storage_params, region, key):
+    # Create storage client
+    storage_client = create_storage_client(project)
+
+    logger.info("Checking if the bucket exists else creating the bucket...")
+    # Create the bucket if not existed
+    bucket = __create_bucket(storage_client, storage_params.bucket, region, key)
+
+    logger.info("Assigning read storage role to the bucket...") 
+    # Add Compute Engine default service account to the bucket
+    # read member from environment variable
+    member = {"user": os.environ['COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL']}
+    role = "roles/storage.objectViewer"
+
+    policy = bucket.get_iam_policy(requested_policy_version=3)
+
+    policy.bindings.append({"role": role, "members": [member]})
+
+    bucket.set_iam_policy(policy)
+    logger.debug(f"Added {member} to {bucket.name} with {role} role.")
+
+    return bucket
+
+def upload_scripts(project, bucket, template_params, cluster_params, secret_name):
+    # create storage client 
+    client = create_storage_client(project)
+
+    # upload the startup script to the bucket
+    startup_script_url = __upload_startup_script(client, project.project_id, template_params.image_family, bucket, cluster_params.name, cluster_params.size, secret_name)
+    # upload the shutdown script to the bucket
+    shutdown_script_url = __upload_shutdown_script(client, project.project_id, template_params.image_family, bucket)
+
+    return {
+        "startup_script_url": startup_script_url,
+        "shutdown_script_url": shutdown_script_url
+    }
+
+
+
+
+
+
+
+# public function 
+def create_bucket(project, bucket_name, location, key):
+    storage_client = create_storage_client(project)
+    return __create_bucket(storage_client, bucket_name, location, key)
+
+# public function 
+def list_buckets(project):
+    storage_client = create_storage_client(project)
+    return __list_buckets(storage_client)
+
+# public function
+def delete_bucket(project, bucket_name):
+    storage_client = create_storage_client(project)
+    return __delete_bucket(storage_client, bucket_name)
+
+# public function
+def upload_blob(project, bucket_name, source_file_name, destination_blob_name):
+    storage_client = create_storage_client(project)
+    return __upload_blob(storage_client, bucket_name, source_file_name, destination_blob_name)
+
+# public function
+def download_blob(project, bucket_name, source_blob_name, destination_file_name):
+    storage_client = create_storage_client(project)
+    return __download_blob(storage_client, bucket_name, source_blob_name, destination_file_name)
+
+# public function
+def list_blobs(project, bucket_name):
+    storage_client = create_storage_client(project)
+    return __list_blobs(storage_client, bucket_name)
+
+
+# public function 
+def upload_startup_script(project, image_family: str, bucket, cluster_name: str, cluster_size: int, secret_name: str):
+    storage_client = create_storage_client(project)
+    return __upload_startup_script(storage_client, project.project_id, image_family, bucket, cluster_name, cluster_size, secret_name)
+
+# public function 
+def upload_shutdown_script(project, image_family: str, bucket):
+    storage_client = create_storage_client(project)
+    return __upload_shutdown_script(storage_client, project.project_id, image_family, bucket)
+
+
+
+
 # create storage client
 def create_storage_client(project):
     # check if auth type is oauth
@@ -20,7 +116,7 @@ def create_storage_client(project):
 
 
 
-def create_bucket(storage_client, bucket_name, location, key):
+def __create_bucket(storage_client, bucket_name, location, key):
     """Creates a new bucket."""
     bucket = storage_client.bucket(bucket_name)
     if not bucket.exists():
@@ -36,7 +132,7 @@ def create_bucket(storage_client, bucket_name, location, key):
     return bucket
 
 
-def list_buckets(storage_client):
+def __list_buckets(storage_client):
     """Lists all buckets."""
 
     buckets = storage_client.list_buckets()
@@ -45,7 +141,7 @@ def list_buckets(storage_client):
         print(bucket.name)
 
 
-def delete_bucket(storage_client, bucket_name):
+def __delete_bucket(storage_client, bucket_name):
     """Deletes a bucket. The bucket must be empty."""
     # bucket_name = "your-bucket-name"
 
@@ -55,7 +151,7 @@ def delete_bucket(storage_client, bucket_name):
     print(f"Bucket {bucket.name} deleted.")
 
 
-def upload_blob(storage_client, bucket_name, source_file_name, destination_blob_name):
+def __upload_blob(storage_client, bucket_name, source_file_name, destination_blob_name):
     """Uploads a file to the bucket."""
     # bucket_name = "your-bucket-name"
     # source_file_name = "local/path/to/file"
@@ -72,7 +168,7 @@ def upload_blob(storage_client, bucket_name, source_file_name, destination_blob_
     return blob.public_url
 
 
-def download_blob(storage_client, bucket_name, source_blob_name, destination_file_name):
+def __download_blob(storage_client, bucket_name, source_blob_name, destination_file_name):
     """Downloads a blob from the bucket."""
     # bucket_name = "your-bucket-name"
     # source_blob_name = "storage-object-name"
@@ -90,7 +186,7 @@ def download_blob(storage_client, bucket_name, source_blob_name, destination_fil
     )
 
 
-def list_blobs(storage_client, bucket_name):
+def __list_blobs(storage_client, bucket_name):
     """Lists all the blobs in the bucket."""
     # bucket_name = "your-bucket-name"
 
@@ -102,7 +198,7 @@ def list_blobs(storage_client, bucket_name):
         print(blob.name)
 
 
-def upload_startup_script(client, project_id: str, image_family: str, bucket, cluster_name: str, cluster_size: int, secret_name: str):
+def __upload_startup_script(client, project_id: str, image_family: str, bucket, cluster_name: str, cluster_size: int, secret_name: str):
     """Uploads the selected startup script base on image family, to the created bucket if not existing and return the startup script url."""
     logger.info(f"Uploading startup script for {image_family} image family...")
     
@@ -143,13 +239,13 @@ def upload_startup_script(client, project_id: str, image_family: str, bucket, cl
         f.write(rendered_template)
 
     # upload the startup script to the bucket
-    startup_script_url = upload_blob(client, bucket.name, os.path.abspath(f"bin/startup-scripts/{startup_script}"), startup_script)
+    startup_script_url = __upload_blob(client, bucket.name, os.path.abspath(f"bin/startup-scripts/{startup_script}"), startup_script)
 
     return startup_script_url
 
 
 # uploading shutdown scripts
-def upload_shutdown_script(client, project_id: str, image_family: str, bucket):
+def __upload_shutdown_script(client, project_id: str, image_family: str, bucket):
     """Uploads the shutdown script based on the image family"""
     logger.info(f"Uploading shutdown script for {image_family} image family...")
 
@@ -181,7 +277,7 @@ def upload_shutdown_script(client, project_id: str, image_family: str, bucket):
 
 
     # upload the startup script to the bucket
-    shutdown_script_url = upload_blob(client, bucket.name, os.path.abspath(f"bin/shutdown-scripts/{shutdown_script}"), shutdown_script)
+    shutdown_script_url = __upload_blob(client, bucket.name, os.path.abspath(f"bin/shutdown-scripts/{shutdown_script}"), shutdown_script)
 
     return shutdown_script_url
 

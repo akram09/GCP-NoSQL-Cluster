@@ -1,9 +1,69 @@
 from loguru import logger
+import re
 import time 
 from lib.template import get_instance_template
+from lib.instances import get_instance_serial_output
 from google.cloud import compute_v1
-from utils.gcp import wait_for_extended_operation, get_image_from_family
+from utils.shared import wait_for_extended_operation
 import google.oauth2.credentials
+
+
+
+# public function 
+def apply_updates_to_instances(project, region, instance_group_manager):
+    # create the instance group managers client
+    instance_group_manager_client = create_region_instance_group_managers_client(project)
+    # apply updates to instances
+    return __apply_updates_to_instances(instance_group_manager_client, project, region, instance_group_manager)
+
+
+
+
+# public function 
+def update_region_managed_instance_group(project, region, instance_group_name, instance_template):
+    # create the instance group managers client
+    instance_group_manager_client = create_region_instance_group_managers_client(project)
+    # update the managed instance group
+    return __update_region_managed_instance_group(instance_group_manager_client, project.project_id, region, instance_group_name, instance_template)
+
+
+# public function 
+def create_region_managed_instance_group(project, region, instance_group_name, instance_template):
+    # create the instance group managers client
+    instance_group_manager_client = create_region_instance_group_managers_client(project)
+    # create the managed instance group
+    return __create_region_managed_instance_group(instance_group_manager_client, project.project_id, region, instance_group_name, instance_template)
+
+# public function 
+def get_region_managed_instance_group(project, region, instance_group_name):
+    # create the instance group managers client
+    instance_group_manager_client = create_region_instance_group_managers_client(project)
+    # get the managed instance group
+    return __get_region_managed_instance_group(instance_group_manager_client, project.project_id, region, instance_group_name)
+
+# public function 
+def region_adding_instances(project, region, instance_group_name, instance_template):
+    # create the instance group managers client
+    instance_group_manager_client = create_region_instance_group_managers_client(project)
+    # add instances to the managed instance group
+    return __region_adding_instances(instance_group_manager_client, project.project_id, region, instance_group_name, instance_template)
+
+# public function 
+def region_scaling_mig(project, region, instance_group_name, instance_template, target_size):
+    # create the instance group managers client
+    instance_group_manager_client = create_region_instance_group_managers_client(project)
+    # scale the managed instance group
+    return __region_scaling_mig(instance_group_manager_client, project.project_id, region, instance_group_name, instance_template, target_size)
+
+
+# public function 
+def list_region_instances(project, region, instance_group_name):
+    # create the instance group managers client
+    instance_group_manager_client = create_region_instance_group_managers_client(project)
+    # list the instances in the managed instance group
+    return __list_region_instances(instance_group_manager_client, project.project_id, region, instance_group_name)
+
+
 
 # create region instance group managers client 
 def create_region_instance_group_managers_client(project):
@@ -16,9 +76,9 @@ def create_region_instance_group_managers_client(project):
         return compute_v1.RegionInstanceGroupManagersClient(credentials=credentials)
     return compute_v1.RegionInstanceGroupManagersClient()
 
-
+# private function
 # update the managed instance group
-def update_region_managed_instance_group(instance_group_manager_client, project_id, region, instance_group_name, instance_template):
+def __update_region_managed_instance_group(instance_group_manager_client, project_id, region, instance_group_name, instance_template):
     logger.info(f"Updating managed instance group {instance_group_name}")
     # create a patch request to update the instance group manager with new instance template
     patch_request = compute_v1.PatchRegionInstanceGroupManagerRequest(
@@ -60,9 +120,9 @@ def update_region_managed_instance_group(instance_group_manager_client, project_
     # return instance group manager
     return instance_group_manager
 
-
+# Private function
 # create managed instance group 
-def create_region_managed_instance_group(instance_group_manager_client, project_id, region, instance_group_name, instance_template):
+def __create_region_managed_instance_group(instance_group_manager_client, project_id, region, instance_group_name, instance_template):
     logger.info(f"Creating managed instance group {instance_group_name} with zero instances")
     # create instance group manager request
     instance_group_manager_request = create_region_managed_instance_group_request(project_id, region, instance_group_name, instance_template, 0)
@@ -94,7 +154,7 @@ def create_region_managed_instance_group(instance_group_manager_client, project_
     return instance_group_manager
 
 
-def get_region_managed_instance_group(instance_group_manager_client, project_id, region, instance_group_name):
+def __get_region_managed_instance_group(instance_group_manager_client, project_id, region, instance_group_name):
     logger.info("Checking if the managed instance group exists ...")
     # get instance group manager
     try:
@@ -109,13 +169,15 @@ def get_region_managed_instance_group(instance_group_manager_client, project_id,
 
 
 # adding custom instances to the managed instance group 
-def region_adding_instances(
+def __region_adding_instances(
     instance_group_manager_client,
     project_id, region, instance_group_manager, size
     ):
     logger.debug(f"Adding {size} instances to the managed instance group {instance_group_manager.name}")
+    # creating the master node first 
+    logger.debug(f"Creating master node {instance_group_manager.name}-000")
     # create an instance group managers create instance request
-    create_instance_request = compute_v1.CreateInstancesRegionInstanceGroupManagerRequest(
+    create_master_instance_request = compute_v1.CreateInstancesRegionInstanceGroupManagerRequest(
         project=project_id,
         region=region,
         instance_group_manager=instance_group_manager.name,
@@ -123,15 +185,15 @@ def region_adding_instances(
             "instances": [
                 {
                     # format the name to 3 digits 
-                    "name": f"{instance_group_manager.name}-{instance_range:03d}"
+                    "name": f"{instance_group_manager.name}-{0:03d}"
                 }
-                for instance_range in range(size)
             ]
         },
     )
+
     # create instances 
     operation = instance_group_manager_client.create_instances(
-        request=create_instance_request
+        request=create_master_instance_request
     )
     # wait for operation to complete
     try:
@@ -139,17 +201,133 @@ def region_adding_instances(
     except Exception as e:
         logger.error(f"Error creating instances: {e}")
         raise e
-    logger.success(f"Instances created")
+    logger.success(f"Master node created {instance_group_manager.name}-000")
+    if size > 1:
+        # get full hostname of the master node 
+        nodes = __list_region_instances(instance_group_manager_client, project_id, region, instance_group_manager.name)
+        master_node = list(nodes)[0]
+        master_node_hostname = master_node.instance.split("/")[-1]
+        # get zone 
+        master_node_zone = master_node.instance.split("/")[-3]
+        full_master_hostname = f"{master_node_hostname}.{master_node_zone}.c.{project_id}.internal"
+        logger.debug(f"Master node hostname: {full_master_hostname}")
 
+        create_instance_request = compute_v1.CreateInstancesRegionInstanceGroupManagerRequest(
+            project=project_id,
+            region=region,
+            instance_group_manager=instance_group_manager.name,
+            region_instance_group_managers_create_instances_request_resource={
+                "instances": [
+                    {
+                        # format the name to 3 digits 
+                        "name": f"{instance_group_manager.name}-{instance_range:03d}",
+                        # set custom metadata
+                        "preserved_state": {
+                            "metadata":
+                                {
+                                    "master_node_hostname": full_master_hostname
+                                }
+                        },
+                    }
+                    for instance_range in range(1, size)
+                ],
+            },
+        )
+        # create instances 
+        operation = instance_group_manager_client.create_instances(
+            request=create_instance_request
+        )
+        # wait for operation to complete
+        try:
+            wait_for_extended_operation(operation, project_id)
+        except Exception as e:
+            logger.error(f"Error creating instances: {e}")
+            raise e
+        logger.success(f"Instances created")
+
+   
+
+
+
+# applying updates_to_instances
+def __apply_updates_to_instances(instance_group_manager_client, project, region, instance_group_manager):
+    # get the list of instances in the instance group manager 
+    # then loop over the instances and apply update to each instance 
+    # check with the serial port output to verify that the startup script worked successfully.
+    # if the startup script failed, the serial port output will contain the error message.
+
+    # get the list of instances in the instance group manager
+    managed_instances = __list_region_instances(instance_group_manager_client, project.project_id, region, instance_group_manager.name)
+    # loop over the instances and apply update to each instance
+    for managed_instance in managed_instances:
+        logger.debug(f"Applying updates to instance {managed_instance.instance}")
+        # create an instance group managers apply updates request
+        apply_updates_request = compute_v1.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest(
+            project=project.project_id,
+            region=region,
+            instance_group_manager=instance_group_manager.name,
+            region_instance_group_managers_apply_updates_request_resource={
+                "instances": [managed_instance.instance]
+            },
+        )
+        # apply updates to instances
+        operation = instance_group_manager_client.apply_updates_to_instances(
+            request=apply_updates_request
+        )
+        # wait for operation to complete
+        try:
+            wait_for_extended_operation(operation, project.project_id)
+        except Exception as e:
+            logger.error(f"Error applying updates to instances: {e}")
+            raise e
+        logger.success(f"Updates applied to instance {managed_instance.instance}")
+        
+        # get instance name and zone from the url 
+        instance_name = managed_instance.instance.split("/")[-1]
+        instance_zone = managed_instance.instance.split("/")[-3]
+
+        logger.debug("Waiting for the startup script to finish")
+        while True:    
+            time.sleep(60)
+            logger.debug("Waiting for the startup script to finish")
+            # get the serial port output of the instance
+            output = get_instance_serial_output(
+                project,
+                instance_zone,
+                instance_name
+            )
+            # use regex to get startup-script-url status code 
+            status_code = re.findall(r"startup-script-url exit status (\d+)", output)
+            print(status_code)
+            if len(status_code) >= 1:
+                break
+        if status_code[-1] != '0':
+            logger.error("The startup script url returned an execution error")
+            logger.error("Stopping the update script")
+            return 
     
 
+
+
+
+
+
 # scaling up the mig or down
-def region_scaling_mig(
+def __region_scaling_mig(
     instance_group_manager_client,
     project_id, region, instance_group_manager, size, wanted_size
     ):
     logger.debug(f"Scaling managed instance group {instance_group_manager.name} from {size} to {wanted_size} instances")
-    if size < wanted_size: 
+    if size < wanted_size:  
+        # get full hostname of the master node 
+        nodes = __list_region_instances(instance_group_manager_client, project_id, region, instance_group_manager.name)
+        master_node = list(nodes)[0]
+        master_node_hostname = master_node.instance.split("/")[-1]
+        # get zone 
+        master_node_zone = master_node.instance.split("/")[-3]
+        full_master_hostname = f"{master_node_hostname}.{master_node_zone}.c.{project_id}.internal"
+        logger.debug(f"Master node hostname: {full_master_hostname}")
+        # creating the master node first 
         # create an instance group managers create instance request
         create_instance_request = compute_v1.CreateInstancesRegionInstanceGroupManagerRequest(
             project=project_id,
@@ -159,7 +337,14 @@ def region_scaling_mig(
                 "instances": [
                     {
                         # format the name to 3 digits 
-                        "name": f"{instance_group_manager.name}-{instance_range:03d}"
+                        "name": f"{instance_group_manager.name}-{instance_range:03d}",
+                        # set custom metadata
+                        "preserved_state": {
+                            "metadata":
+                                {
+                                    "master_node_hostname": full_master_hostname
+                                }
+                        }
                     }
                     for instance_range in range(size, wanted_size)
                 ]
@@ -211,7 +396,7 @@ def region_scaling_mig(
 
 
 # list instances of an instance group manager
-def list_region_instances(instance_group_manager_client, project_id, region, instance_group_name):
+def __list_region_instances(instance_group_manager_client, project_id, region, instance_group_name):
     # create instance group manager request
     instance_group_manager_request = compute_v1.ListManagedInstancesRegionInstanceGroupManagersRequest(
         project=project_id, region=region, instance_group_manager=instance_group_name

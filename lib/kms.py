@@ -1,7 +1,63 @@
 import os 
+import uuid
 from loguru import logger
 from google.cloud import kms
 import google.oauth2.credentials
+
+
+
+
+
+
+def setup_encryption_keys(project, cluster_name, region):
+
+    # create secret manager client
+    client = create_key_management_service_client(project)
+
+    # Create KMS key ring and symmetric encryption/decryption key
+    key_ring_id = f"key-ring-{cluster_name}" 
+    logger.info(f"Checking key ring {key_ring_id} ...")
+    # check if key ring exists 
+    key_ring = __get_key_ring(client, project.project_id, region, key_ring_id)
+    if key_ring is None: 
+        logger.debug("Key ring does not exist, creating key ring")
+        key_ring = __create_key_ring(client, project.project_id, region, key_ring_id)
+
+    logger.info("Checking encryption key ...")
+    key_id = f"key-{cluster_name}"
+    key = __create_key_symmetric_encrypt_decrypt(client, project.project_id, region, key_ring_id, key_id+f"-{uuid.uuid4().hex}")
+    return key
+
+
+
+
+
+
+# public function 
+def create_key_ring(project, location_id, key_ring_id):
+    client = create_key_management_service_client(project)
+    return __create_key_ring(client, project.project_id, location_id, key_ring_id)
+
+
+# public function
+def get_key_ring(project, location_id, key_ring_id):
+    client = create_key_management_service_client(project)
+    return __get_key_ring(client, project.project_id, location_id, key_ring_id)
+
+# public function   
+def create_key_symmetric_encrypt_decrypt(project, location_id, key_ring_id, key_id):
+    client = create_key_management_service_client(project)
+    return __create_key_symmetric_encrypt_decrypt(client, project.project_id, location_id, key_ring_id, key_id)
+
+# public function
+def assign_permission_to_storage(project, location_id, key_ring_id, key_id, bucket_name):
+    client = create_key_management_service_client(project)
+    return __assign_permission_to_storage(client, project.project_id, location_id, key_ring_id, key_id, bucket_name)
+
+# public function
+def get_key_symmetric_encrypt_decrypt(project, location_id, key_ring_id, key_id):
+    client = create_key_management_service_client(project)
+    return __get_key_symmetric_encrypt_decrypt(client, project.project_id, location_id, key_ring_id, key_id)
 
 # create keyManagementServiceClient
 def create_key_management_service_client(project): 
@@ -15,7 +71,7 @@ def create_key_management_service_client(project):
     # create the secret manager client
     return kms.KeyManagementServiceClient()
 
-def create_key_ring(client, project_id, location_id, key_ring_id):
+def __create_key_ring(client, project_id, location_id, key_ring_id):
     """
     Creates a new key ring in Cloud KMS
     Args:
@@ -41,7 +97,7 @@ def create_key_ring(client, project_id, location_id, key_ring_id):
 
 
 # get key ring 
-def get_key_ring(client, project_id, location_id, key_ring_id):
+def __get_key_ring(client, project_id, location_id, key_ring_id):
     """
     Gets a key ring from Cloud KMS.
     Args:
@@ -67,7 +123,7 @@ def get_key_ring(client, project_id, location_id, key_ring_id):
 
 
 
-def create_key_symmetric_encrypt_decrypt(client, project_id, location_id, key_ring_id, key_id):
+def __create_key_symmetric_encrypt_decrypt(client, project_id, location_id, key_ring_id, key_id):
     """
     Creates a new symmetric encryption/decryption key in Cloud KMS.
     Args:
@@ -95,11 +151,11 @@ def create_key_symmetric_encrypt_decrypt(client, project_id, location_id, key_ri
     # Call the API.
     created_key = client.create_crypto_key(
         request={'parent': key_ring_name, 'crypto_key_id': key_id, 'crypto_key': key})
-    assign_permission_to_storage(client, project_id, key_ring_id, key_id, location_id)
+    __assign_permission_to_storage(client, project_id, key_ring_id, key_id, location_id)
     return created_key
 
 
-def assign_permission_to_storage(client, project_id, key_ring_id, key_id, location):
+def __assign_permission_to_storage(client, project_id, key_ring_id, key_id, location):
     logger.info(f"Assigning permission to storage for key {key_id} in key ring {key_ring_id} in project {project_id}")
     key_name = client.crypto_key_path(project_id, location, key_ring_id, key_id)
 
@@ -122,7 +178,7 @@ def assign_permission_to_storage(client, project_id, key_ring_id, key_id, locati
 
 
 # get key by key ring id and key id 
-def get_key_symmetric_encrypt_decrypt(client, project_id, location_id, key_ring_id, key_id):
+def __get_key_symmetric_encrypt_decrypt(client, project_id, location_id, key_ring_id, key_id):
     """
     Gets a symmetric encryption/decryption key from Cloud KMS.
     Args:

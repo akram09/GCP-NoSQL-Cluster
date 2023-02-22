@@ -1,9 +1,43 @@
 import sys
+from loguru import logger
 from typing import Any
 from google.api_core.extended_operation import ExtendedOperation
 from google.cloud import compute_v1
 import google.oauth2.credentials
-from utils.gcp import wait_for_extended_operation
+from utils.shared import wait_for_extended_operation
+
+
+
+
+def setup_firewall(project, cluster_name):
+    # create client 
+    client = create_firewalls_client(project)
+
+    # Check if the firewall rule exists
+    if __check_firewall_rule(client, project.project_id, cluster_name+"-firewall"):
+        logger.debug(f"Firewall rule {cluster_name}-firewall already exists")
+    else:
+        logger.debug(f"Creating firewall rule {cluster_name}-firewall")
+        __create_firewall_rule(client, project.project_id, cluster_name+"-firewall")
+        logger.success(f"Firewall rule {cluster_name}-firewall created")
+
+
+
+
+
+
+
+# public function
+def create_firewall_rule(project, firewall_rule_name: str, network: str = "global/networks/default"):
+    client = create_firewalls_client(project)
+    return __create_firewall_rule(client, project.project_id, firewall_rule_name, network)
+
+
+# public function
+def check_firewall_rule_exists(project, firewall_rule_name: str):
+    client = create_firewalls_client(project)
+    return __check_firewall_rule_exists(client, project.project_id, firewall_rule_name)
+
 
 
 # create firewalls client
@@ -19,8 +53,8 @@ def create_firewalls_client(project):
     return compute_v1.FirewallsClient()
 
 
-# Create a firewall rule 
-def create_firewall_rule(
+# private function to create a firewall rule
+def __create_firewall_rule(
     firewall_client, 
     project_id: str, firewall_rule_name: str, network: str = "global/networks/default"
 ):
@@ -57,8 +91,8 @@ def create_firewall_rule(
     wait_for_extended_operation(operation, "firewall rule creation")
 
 
-# Check if the firewall rule exists 
-def check_firewall_rule(firewall_client, project_id: str, firewall_rule_name: str) -> bool:
+# private function to check if the firewall rule exists
+def __check_firewall_rule(firewall_client, project_id: str, firewall_rule_name: str) -> bool:
 
     # check if the firewall rule exists
     try:
@@ -66,23 +100,4 @@ def check_firewall_rule(firewall_client, project_id: str, firewall_rule_name: st
         return True
     except Exception as e:
         return False
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
