@@ -88,12 +88,16 @@ def __create_key_ring(client, project_id, location_id, key_ring_id):
 
     # Build the key ring.
     key_ring = {}
-
-    # Call the API.
-    created_key_ring = client.create_key_ring(
-        request={'parent': location_name, 'key_ring_id': key_ring_id, 'key_ring': key_ring})
-    logger.success(f"Created key ring {created_key_ring.name}")
-    return created_key_ring
+    try:
+        # Call the API.
+        created_key_ring = client.create_key_ring(
+            request={'parent': location_name, 'key_ring_id': key_ring_id, 'key_ring': key_ring})
+        logger.success(f"Created key ring {created_key_ring.name}")
+        return created_key_ring
+    except Exception as e:
+        logger.error(f"Error creating key ring {key_ring_id} in project {project_id}")
+        logger.error(e)
+        exit(1)
 
 
 # get key ring 
@@ -147,12 +151,17 @@ def __create_key_symmetric_encrypt_decrypt(client, project_id, location_id, key_
             'algorithm': algorithm,
         }
     }
-
-    # Call the API.
-    created_key = client.create_crypto_key(
-        request={'parent': key_ring_name, 'crypto_key_id': key_id, 'crypto_key': key})
-    __assign_permission_to_storage(client, project_id, key_ring_id, key_id, location_id)
-    return created_key
+    
+    try:
+        # Call the API.
+        created_key = client.create_crypto_key(
+            request={'parent': key_ring_name, 'crypto_key_id': key_id, 'crypto_key': key})
+        __assign_permission_to_storage(client, project_id, key_ring_id, key_id, location_id)
+        return created_key
+    except Exception as e:
+        logger.error(f"Error creating key {key_id} in key ring {key_ring_id} in project {project_id}")
+        logger.error(e)
+        exit(1)
 
 
 def __assign_permission_to_storage(client, project_id, key_ring_id, key_id, location):
@@ -170,9 +179,13 @@ def __assign_permission_to_storage(client, project_id, key_ring_id, key_id, loca
         role='roles/cloudkms.cryptoKeyEncrypterDecrypter',
         members=[f'serviceAccount:{service_account}']
     )
-
-    # Call the API.
-    updated_policy = client.set_iam_policy(request={'resource': key_name, 'policy': policy})
+    try:
+        # Call the API.
+        updated_policy = client.set_iam_policy(request={'resource': key_name, 'policy': policy})
+    except Exception as e:
+        logger.error(f"Error assigning permission to storage for key {key_id} in key ring {key_ring_id} in project {project_id}")
+        logger.error(e)
+        exit(1)
     logger.success(f"Assigned permission to storage for key {key_id} in key ring {key_ring_id} in project {project_id}")
 
 

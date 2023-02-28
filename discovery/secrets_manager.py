@@ -123,13 +123,18 @@ def __create_secret(service, project_id, secret_name):
             "automatic": {}
         }
     }
-    response = service.projects().secrets().create(parent=name, secretId=secret_name, body=body).execute()
-    # check the response 
-    if response is None:
+    try:
+        response = service.projects().secrets().create(parent=name, secretId=secret_name, body=body).execute()
+        # check the response 
+        if response is None:
+            logger.error(f"Secret {secret_name} creation failed.")
+            exit(1)
+        else:
+            logger.success(f"Secret {secret_name} created successfully.")
+    except Exception as e:
         logger.error(f"Secret {secret_name} creation failed.")
+        logger.error(e)
         exit(1)
-    else:
-        logger.success(f"Secret {secret_name} created successfully.")
 
 
 
@@ -150,13 +155,18 @@ def __add_latest_secret_version(service, project_id, secret_name, secret_value):
             "data": base64.b64encode(payload.encode('utf-8')).decode('utf-8'),
         }
     }
-    # addVersion 
-    response = service.projects().secrets().addVersion(parent=name, body=body).execute()
-    # print version 
-    if response is None:
+    try:
+        # addVersion 
+        response = service.projects().secrets().addVersion(parent=name, body=body).execute()
+        # print version 
+        if response is None:
+            logger.error(f"Secret {secret_name} version creation failed.")
+            exit(1)
+        else:
+            logger.success(f"Secret {secret_name} version created successfully.")
+            return response
+    except Exception as e:
         logger.error(f"Secret {secret_name} version creation failed.")
+        logger.error(e)
         exit(1)
-    else:
-        logger.success(f"Secret {secret_name} version created successfully.")
-        return response
 

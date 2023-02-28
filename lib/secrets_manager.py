@@ -121,10 +121,15 @@ def __create_secret(client, project_id, secret_name):
     parent = f"projects/{project_id}"
 
     # Create the secret payload
-    response = client.create_secret(
-        request={"parent": parent, "secret_id": secret_name, "secret": {"replication": {"automatic": {}},},}
-    )
-    logger.success(f"Secret {secret_name} created successfully.")
+    try:
+        response = client.create_secret(
+            request={"parent": parent, "secret_id": secret_name, "secret": {"replication": {"automatic": {}},},}
+        )
+        logger.success(f"Secret {secret_name} created successfully.")
+    except Exception as e:
+        logger.error(f"Error creating secret {secret_name}.")
+        logger.error(e)
+        exit(1)
 
 
 # add the secret version
@@ -139,10 +144,15 @@ def __add_latest_secret_version(client, project_id, secret_name, secret_value):
     # caclculate the crc32c hash
     crc32c = google_crc32c.Checksum()
     crc32c.update(payload)
+    
+    try:
+        # Add the secret version
+        response = client.add_secret_version(request={"parent": parent, "payload": {"data": payload, "data_crc32c": int(crc32c.hexdigest(), 16) }})
+        # print version 
+        logger.info(f"Secret version {response.name} added successfully.")
+    except Exception as e:
+        logger.error(f"Error adding secret version for {secret_name}.")
+        logger.error(e)
+        exit(1)
 
-    # Add the secret version
-    response = client.add_secret_version(request={"parent": parent, "payload": {"data": payload, "data_crc32c": int(crc32c.hexdigest(), 16) }})
-
-    # print version 
-    logger.info(f"Secret version {response.name} added successfully.")
 

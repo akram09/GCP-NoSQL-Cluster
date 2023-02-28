@@ -62,19 +62,24 @@ def __create_key_ring(service, project_id, location_id, key_ring_id):
         KeyRing: Cloud KMS key ring.
     """
     logger.info(f"Creating key ring {key_ring_id}  in project {project_id}")
-    # use the discovery api to create a key ring 
-    key_ring = service.projects().locations().keyRings().create(
-        parent=f"projects/{project_id}/locations/{location_id}",
-        keyRingId=key_ring_id
-    ).execute()
-    # check 
-    if key_ring is None:
+    try:
+        # use the discovery api to create a key ring 
+        key_ring = service.projects().locations().keyRings().create(
+            parent=f"projects/{project_id}/locations/{location_id}",
+            keyRingId=key_ring_id
+        ).execute()
+        # check 
+        if key_ring is None:
+            logger.error(f"Error creating key ring {key_ring_id} in project {project_id}")
+            return None
+        # log success
+        logger.success(f"Created key ring {key_ring_id} in project {project_id}")
+        # return the key ring
+        return key_ring
+    except Exception as e:
         logger.error(f"Error creating key ring {key_ring_id} in project {project_id}")
-        return None
-    # log success
-    logger.success(f"Created key ring {key_ring_id} in project {project_id}")
-    # return the key ring
-    return key_ring
+        logger.error(e)
+        exit(1)
 
 
 # get key ring 
@@ -112,20 +117,25 @@ def __create_key_symmetric_encrypt_decrypt(service, project_id, location_id, key
     Returns:
         CryptoKey: Cloud KMS key.
     """
-    # use the discovery api to create a key
-    key = service.projects().locations().keyRings().cryptoKeys().create(
-        parent=f"projects/{project_id}/locations/{location_id}/keyRings/{key_ring_id}",
-        body={ "purpose": "ENCRYPT_DECRYPT", "versionTemplate": {"algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION"}},
-        cryptoKeyId=key_id
-    ).execute()
-    # check
-    if key is None:
+    try:
+        # use the discovery api to create a key
+        key = service.projects().locations().keyRings().cryptoKeys().create(
+            parent=f"projects/{project_id}/locations/{location_id}/keyRings/{key_ring_id}",
+            body={ "purpose": "ENCRYPT_DECRYPT", "versionTemplate": {"algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION"}},
+            cryptoKeyId=key_id
+        ).execute()
+        # check
+        if key is None:
+            logger.error(f"Error creating key {key_id} in key ring {key_ring_id} in project {project_id}")
+            return None
+        # log success
+        logger.success(f"Created key {key_id} in key ring {key_ring_id} in project {project_id}")
+        __assign_permission_to_storage(service, project_id, key_ring_id, key_id, location_id)
+        return key
+    except Exception as e:
         logger.error(f"Error creating key {key_id} in key ring {key_ring_id} in project {project_id}")
-        return None
-    # log success
-    logger.success(f"Created key {key_id} in key ring {key_ring_id} in project {project_id}")
-    __assign_permission_to_storage(service, project_id, key_ring_id, key_id, location_id)
-    return key
+        logger.error(e)
+        exit(1)
 
 
 def __assign_permission_to_storage(service, project_id, key_ring_id, key_id, location):

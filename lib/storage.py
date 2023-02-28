@@ -120,9 +120,13 @@ def __create_bucket(storage_client, bucket_name, location, key):
     """Creates a new bucket."""
     bucket = storage_client.bucket(bucket_name)
     if not bucket.exists():
-        bucket = storage_client.create_bucket(bucket_name, location=location)
-        # Set the bucket's default encryption key
-        logger.info(f"Bucket {bucket.name} created.")
+        try:
+            bucket = storage_client.create_bucket(bucket_name, location=location)
+            # Set the bucket's default encryption key
+            logger.info(f"Bucket {bucket.name} created.")
+        except Exception as e:
+            logger.error(f"Error creating bucket {bucket_name} in {location} with error: {e}")
+            raise e
     else:
         logger.info(f"Bucket {bucket.name} exists.")
 
@@ -152,9 +156,13 @@ def __delete_bucket(storage_client, bucket_name):
     # bucket_name = "your-bucket-name"
 
     bucket = storage_client.bucket(bucket_name)
-    bucket.delete()
+    try:
+        bucket.delete()
+        print(f"Bucket {bucket.name} deleted.")
+    except Exception as e:
+        logger.error(f"Error deleting bucket {bucket_name} with error: {e}")
+        raise e
 
-    print(f"Bucket {bucket.name} deleted.")
 
 
 def __upload_blob(storage_client, bucket_name, source_file_name, destination_blob_name):
