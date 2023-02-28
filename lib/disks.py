@@ -30,9 +30,15 @@ def disk_from_image(
     """
     boot_disk = compute_v1.AttachedDisk()
 
+    # check if encryption key is dict 
+    if isinstance(disk_enc_dec_key, dict):
+        key_name = disk_enc_dec_key.get("name")
+    else:
+        key_name = disk_enc_dec_key.name
+
     # Set the encryption key on the boot disk
     disk_encryption_key = compute_v1.CustomerEncryptionKey(
-        kms_key_name=disk_enc_dec_key.name
+        kms_key_name=key_name
     )
     boot_disk.disk_encryption_key = disk_encryption_key
 

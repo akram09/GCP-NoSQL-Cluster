@@ -1,13 +1,13 @@
 ---
 cluster:
-  name: mig-7
+  name: mig-13
   region: europe-west9
   size: 2
   couchbase:
     username: kero
     password: password
   template:
-    name: mig-7-template
+    name: mig-13-template
     image_project: ubuntu-os-cloud
     image_family: ubuntu-1804-lts
     machine_type: e2-micro

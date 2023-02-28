@@ -7,8 +7,10 @@ from lib.regional_managed_instance import create_region_managed_instance_group, 
 from lib.template import create_template, get_instance_template, update_template, create_instance_templates_client
 from lib.firewall import setup_firewall
 from lib.storage import setup_cloud_storage, upload_scripts 
-from lib.secrets_manager import setup_secret_manager    
-from lib.kms import setup_encryption_keys 
+# from lib.secrets_manager import setup_secret_manager    
+from discovery.secrets_manager import setup_secret_manager
+# from lib.kms import setup_encryption_keys 
+from discovery.kms import setup_encryption_keys
 from lib.images import get_image_from_family
 
 
@@ -44,7 +46,7 @@ def create_cluster(args):
     # setup instance template
     logger.info("Checking instance template ...")
     instance_template = setup_instance_template(project, cluster, cluster.template, cluster.storage, scripts, key)
-    
+
     # check managed instance group 
     logger.info("Checking managed instance group ...")
     mig = setup_managed_instance_group(project, cluster, instance_template)

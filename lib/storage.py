@@ -127,7 +127,13 @@ def __create_bucket(storage_client, bucket_name, location, key):
         logger.info(f"Bucket {bucket.name} exists.")
 
     logger.info(f"Setting default encryption key for {bucket.name} bucket...")
-    bucket.default_kms_key_name = key.name
+    # check if the key is dict 
+    if isinstance(key, dict):
+        # get the key name
+        key_name = key['name']
+    else:
+        key_name = key.name
+    bucket.default_kms_key_name = key_name
     bucket.patch()
     return bucket
 
