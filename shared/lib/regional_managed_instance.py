@@ -1,8 +1,8 @@
 from loguru import logger
 import re
 import time 
-from lib.template import get_instance_template
-from lib.instances import get_instance_serial_output
+from shared.lib.template import get_instance_template
+from shared.lib.instances import get_instance_serial_output
 from google.cloud import compute_v1
 from utils.shared import wait_for_extended_operation
 import google.oauth2.credentials

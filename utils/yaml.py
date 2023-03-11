@@ -1,9 +1,9 @@
 from loguru import logger
 import yaml
-from entities.cluster import ClusterParams
-from entities.storage import GCPStorageParams
-from entities.template import TemplateParams
-from entities.couchbase import CouchbaseParams
+from shared.entities.cluster import ClusterParams
+from shared.entities.storage import GCPStorageParams
+from shared.entities.template import TemplateParams
+from shared.entities.couchbase import CouchbaseParams
 
 # Parse cluster arguments from yaml file
 def parse_from_yaml(yaml_file: str):

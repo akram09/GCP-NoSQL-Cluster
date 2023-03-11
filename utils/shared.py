@@ -3,7 +3,7 @@ import sys
 from typing import Any
 from loguru import logger
 from utils.env import get_env_project_id, check_application_credentials, check_compute_engine_service_account_email, check_storage_service_account_email, check_service_account_oauth_token
-from entities.gcp_project import GCPProject
+from shared.entities.gcp_project import GCPProject
 from google.api_core.extended_operation import ExtendedOperation
 
 # Check parameters

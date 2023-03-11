@@ -3,15 +3,15 @@ import uuid
 from loguru import logger
 from utils.shared import check_gcp_params
 from utils.args import cluster_from_args
-from lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances, region_adding_instances, get_region_managed_instance_group, region_scaling_mig, create_region_instance_group_managers_client
-from lib.template import create_template, get_instance_template, update_template, create_instance_templates_client
-from lib.firewall import setup_firewall
-from lib.storage import setup_cloud_storage, upload_scripts 
+from shared.lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances, region_adding_instances, get_region_managed_instance_group, region_scaling_mig, create_region_instance_group_managers_client
+from shared.lib.template import create_template, get_instance_template, update_template, create_instance_templates_client
+from shared.lib.firewall import setup_firewall
+from shared.lib.storage import setup_cloud_storage, upload_scripts 
 # from lib.secrets_manager import setup_secret_manager    
-from discovery.secrets_manager import setup_secret_manager
+from shared.discovery.secrets_manager import setup_secret_manager
 # from lib.kms import setup_encryption_keys 
-from discovery.kms import setup_encryption_keys
-from lib.images import get_image_from_family
+from shared.discovery.kms import setup_encryption_keys
+from shared.lib.images import get_image_from_family
 
 
 

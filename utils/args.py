@@ -1,14 +1,14 @@
 import argparse
 from loguru import logger
-from entities.cluster import ClusterParams
-from entities.storage import GCPStorageParams
-from entities.template import TemplateParams
-from entities.couchbase import CouchbaseParams
+from shared.entities.cluster import ClusterParams
+from shared.entities.storage import GCPStorageParams
+from shared.entities.template import TemplateParams
+from shared.entities.couchbase import CouchbaseParams
 from utils.yaml import parse_from_yaml
 
 # Parse arguments 
 def parse_args_from_cmdline():
-    parser = argparse.ArgumentParser(description='Management of a couchbase cluster over gcp with the used of managed instance group')
+    parser = argparse.ArgumentParser(description='Management of a couchbase cluster over Google Cloud Platform')
 
     # add a new subparser for the create cmd 
     subparsers = parser.add_subparsers(help='Different commands for lifecycle management')
@@ -16,6 +16,8 @@ def parse_args_from_cmdline():
     add_create_cmd_args(subparsers)
 
     add_update_cmd_args(subparsers)
+
+    add_server_cmd_args(subparsers)
 
     namespace = parser.parse_args()
     
@@ -71,52 +73,71 @@ def add_create_cmd_args(subparsers):
 
 # Add "update"  subcommand and arguments
 def add_update_cmd_args(subparsers):
-    create_subparser = subparsers.add_parser('update', help='Update and deploy a couchbase cluster')
+    update_subparser = subparsers.add_parser('update', help='Update and deploy a couchbase cluster')
     
-    create_subparser.add_argument('--project-id', dest='project_id', help='The id of GCP project, this argument can be also specified with the "GOOGLE_CLOUD_PROJECT" environment variable.')
+    update_subparser.add_argument('--project-id', dest='project_id', help='The id of GCP project, this argument can be also specified with the "GOOGLE_CLOUD_PROJECT" environment variable.')
     # yaml file
-    create_subparser.add_argument('--yaml-file', dest='yaml_file', help='name of the yaml file with cluster definition')
+    update_subparser.add_argument('--yaml-file', dest='yaml_file', help='name of the yaml file with cluster definition')
     # authentifcation type 
-    create_subparser.add_argument('--authentication-type', default="service-account" ,dest='authentication_type', help="The type of authentication to be used either service-account or oauth")
+    update_subparser.add_argument('--authentication-type', default="service-account" ,dest='authentication_type', help="The type of authentication to be used either service-account or oauth")
     # cluster name
-    create_subparser.add_argument('--cluster-name', dest='cluster_name', help='Name of the cluster')
+    update_subparser.add_argument('--cluster-name', dest='cluster_name', help='Name of the cluster')
     # cluster size 
-    create_subparser.add_argument('--cluster-size', dest='cluster_size', help='Number of nodes in the cluster')
+    update_subparser.add_argument('--cluster-size', dest='cluster_size', help='Number of nodes in the cluster')
     # cloud storage bucket
-    create_subparser.add_argument('--bucket', dest='bucket', help='Cloud storage bucket to store the cluster init scripts')
+    update_subparser.add_argument('--bucket', dest='bucket', help='Cloud storage bucket to store the cluster init scripts')
     # cluster region
-    create_subparser.add_argument('--region', dest='region', help='Region where the cluster will be created')
+    update_subparser.add_argument('--region', dest='region', help='Region where the cluster will be created')
     # machine type with default value 
-    create_subparser.add_argument('--machine-type', dest='machine_type', help='Machine type for the cluster')
+    update_subparser.add_argument('--machine-type', dest='machine_type', help='Machine type for the cluster')
     # disk size with default value
-    create_subparser.add_argument('--disk-size', dest='disk_size', help='Disk size for the cluster')
+    update_subparser.add_argument('--disk-size', dest='disk_size', help='Disk size for the cluster')
     # disk type with default value
-    create_subparser.add_argument('--disk-type', dest='disk_type', help='Disk type for the cluster')
+    update_subparser.add_argument('--disk-type', dest='disk_type', help='Disk type for the cluster')
     # extra disk tyoe 
-    create_subparser.add_argument('--extra-disk-type', dest='extra_disk_type', help='Extra disk type')
+    update_subparser.add_argument('--extra-disk-type', dest='extra_disk_type', help='Extra disk type')
     # extra disk size
-    create_subparser.add_argument('--extra-disk-size', dest='extra_disk_size', help='Extra disk size')
+    update_subparser.add_argument('--extra-disk-size', dest='extra_disk_size', help='Extra disk size')
     # machine image project with default value 
-    create_subparser.add_argument('--image-project', dest='image_project', help='Machine image project for the cluster')
+    update_subparser.add_argument('--image-project', dest='image_project', help='Machine image project for the cluster')
     # Template name
-    create_subparser.add_argument('--template-name', dest='template name, this parameter needs to be present')
+    update_subparser.add_argument('--template-name', dest='template name, this parameter needs to be present')
     # machine image family with default value 
-    create_subparser.add_argument('--image-family', dest='image_family', help='Machine image family project for the cluster')
+    update_subparser.add_argument('--image-family', dest='image_family', help='Machine image family project for the cluster')
     # cluster username with default value
-    create_subparser.add_argument('--cluster-username', dest='cluster-username', help='Username for the cluster')
+    update_subparser.add_argument('--cluster-username', dest='cluster-username', help='Username for the cluster')
     # cluster password with default value
-    create_subparser.add_argument('--cluster-password', dest='cluster-password', help='Password for the cluster')
+    update_subparser.add_argument('--cluster-password', dest='cluster-password', help='Password for the cluster')
 
     # set the function to be called when running the sub command
-    create_subparser.set_defaults(command="update")
+    update_subparser.set_defaults(command="update")
 
 
 
+# Add "server"  subcommand and arguments
+def add_server_cmd_args(subparsers):
+    server_subparser = subparsers.add_parser('server', help='Launch a Flask web server')
+   
+
+
+    server_subparser.add_argument('--project-id', dest='project_id', help='The id of GCP project, this argument can be also specified with the "GOOGLE_CLOUD_PROJECT" environment variable.')
+    # authentifcation type 
+    server_subparser.add_argument('--authentication-type', default="service-account" ,dest='authentication_type', help="The type of authentication to be used either service-account or oauth")
+
+    # server host 
+    server_subparser.add_argument('--host', dest='host', default="localhost", help='Specify the host of the flask server')
+
+    # server port 
+    server_subparser.add_argument('--port', dest='port', default="8080", help='Specify the port of the flask server')
+
+    # server debug
+    server_subparser.add_argument('--debug', dest='debug', default=True, help='Specify the debug mode of the flask server')
+
+    # set the function to be called when running the sub command
+    server_subparser.set_defaults(command="server")
 
 def required_error_msg(arg, command):
-    command_msg = f'''usage: main.py {command}  [-h] --yaml-file YAML_FILE [--cluster-name CLUSTER_NAME] [--cluster-size CLUSTER_SIZE] [--bucket BUCKET] [--machine-type MACHINE_TYPE] [--disk-size DISK_SIZE] [--template-name TEMPLATE_NAME]
-[--disk-type DISK_TYPE] [--image-project IMAGE_PROJECT] [--image-family IMAGE_FAMILY] [ --cluster-username CLUSTER_USERNAME] [--cluster-password CLUSTER_PASSWORD]
-        '''
+    command_msg = f'''usage: main.py {args.command} -h'''
     logger.error(f"{command_msg}\nmain.py: error: the following arguments are required: --{'-'.join(arg.split('_'))}")
 
 # Create cluster object from arguments

@@ -1,9 +1,9 @@
 from loguru import logger
 from google.cloud import compute_v1
 from utils.shared import wait_for_extended_operation
-from lib.disks import  disk_from_image
+from shared.lib.disks import  disk_from_image
 from typing import Iterable
-from lib.kms import create_key_ring, create_key_symmetric_encrypt_decrypt, get_key_ring, get_key_symmetric_encrypt_decrypt, is_key_enabled
+from shared.lib.kms import create_key_ring, create_key_symmetric_encrypt_decrypt, get_key_ring, get_key_symmetric_encrypt_decrypt, is_key_enabled
 import os
 import google.oauth2.credentials
 

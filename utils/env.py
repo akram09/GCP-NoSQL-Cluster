@@ -1,10 +1,10 @@
 from loguru import logger
 from dotenv import load_dotenv
 import os 
-from entities.gcp_project import GCPProject
+from shared.entities.gcp_project import GCPProject
 
 
-def init(): 
+def load_environment_variables(): 
     # load environment variables from .env file
     load_dotenv()
 
