@@ -1,8 +1,6 @@
 import uuid
 import os
 from loguru import logger
-from utils.shared import check_gcp_params
-from utils.args import cluster_from_args
 from shared.lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances, region_adding_instances, get_region_managed_instance_group, region_scaling_mig, update_region_managed_instance_group,create_region_instance_group_managers_client, apply_updates_to_instances
 from shared.lib.template import create_template, get_instance_template, update_template, create_instance_templates_client
 from shared.lib.firewall import setup_firewall
@@ -15,17 +13,7 @@ from shared.lib.images import get_image_from_family
 
 
 
-def update_cluster(args):
-    logger.info("Welcome to the cluster update  script")
-    logger.info("Checking parameters ...")
-    project = check_gcp_params(args)
-    logger.info(f"Parameters checked, project is {project}")
-
-    # parse parameters 
-    logger.info("Parsing parameters ...")
-    cluster = cluster_from_args(args)
-    logger.info(f"Parameters parsed, cluster is {cluster}")
-
+def update_cluster(project, cluster):
     # check managed instance group 
     logger.info(f"Checking if managed instance group {cluster.name} exists ...")
     mig = get_region_managed_instance_group(project, cluster.region, cluster.name)

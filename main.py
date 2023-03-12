@@ -1,8 +1,8 @@
 from utils.args import parse_args_from_cmdline 
 from utils.env import load_environment_variables
-from cmd.create_cluster import create_cluster
-from cmd.update_cluster import update_cluster
-from cmd.start_server import start_server
+from cmd.create_cmd import create_cluster
+from cmd.update_cmd import update_cluster
+from cmd.server_cmd import start_server
 
 def main():
     # init environment 

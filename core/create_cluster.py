@@ -15,18 +15,7 @@ from shared.lib.images import get_image_from_family
 
 
 
-def create_cluster(args):
-    logger.info("Welcome to the cluster creation script")
-    logger.info("Checking parameters ...")
-    project = check_gcp_params(args)
-    logger.info(f"Parameters checked, project is {project}")
-
-    # parse parameters 
-    logger.info("Parsing parameters ...")
-    cluster = cluster_from_args(args)
-    logger.info(f"Parameters parsed, cluster is {cluster}")
-
-
+def create_cluster(project, cluster):
     # checking secret manager
     logger.info("Checking secret manager ...")
     secret_name = setup_secret_manager(project, cluster, cluster.couchbase_params)
