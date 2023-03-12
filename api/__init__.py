@@ -1,6 +1,19 @@
 import os
-from flask import Flask, g
-import api.cluster as cluster
+from flask import Flask, g, Blueprint
+from flask_restx import Api
+
+
+# create the api blueprint 
+api_blueprint = Blueprint('api', __name__, url_prefix='/api/v1')
+
+# create the api
+api = Api(api_blueprint, version='1.0', title='GCP Cluster API', description='A simple API to create GCP clusters')
+
+# add the cluster namespace to the api
+from api.routes.cluster import api as cluster_api
+api.add_namespace(cluster_api)
+
+
 
 def create_app(gcp_project, test_config=None):
     # create and configure the app
@@ -11,16 +24,20 @@ def create_app(gcp_project, test_config=None):
     else:
         # load the test config if passed in
         app.config.from_mapping(test_config)
-    
-    with app.app_context():
-        # set the gcp project in the global g 
+   
+    # store a global object that can be accessed in all requests
+    @app.before_request
+    def before_request():
         g.gcp_project = gcp_project
 
     # register the cluster blueprint
-    app.register_blueprint(cluster.bp)
+    app.register_blueprint(api_blueprint)
     # ensure the instance folder exists
     try:
         os.makedirs(app.instance_path)
     except OSError:
         pass
     return app
+
+
+

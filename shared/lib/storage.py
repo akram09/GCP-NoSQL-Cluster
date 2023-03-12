@@ -233,7 +233,7 @@ def __upload_startup_script(client, project_id: str, image_family: str, bucket, 
 
 
     # read the template 
-    with open(f"./bin/startup-scripts/{script_template}", "r") as f:
+    with open(f"./shared/bin/startup-scripts/{script_template}", "r") as f:
         template = Template(f.read())
 
 
@@ -249,11 +249,11 @@ def __upload_startup_script(client, project_id: str, image_family: str, bucket, 
     # render the template 
     rendered_template = template.render(master_node_name=master_node_name, master_node_hostname=master_node_hostname, nodes=hostnames, couchbase_secret_name=secret_name)
     # write the rendered template to a file
-    with open(f"./bin/startup-scripts/{startup_script}", "w") as f:
+    with open(f"./shared/bin/startup-scripts/{startup_script}", "w") as f:
         f.write(rendered_template)
 
     # upload the startup script to the bucket
-    startup_script_url = __upload_blob(client, bucket.name, os.path.abspath(f"bin/startup-scripts/{startup_script}"), startup_script)
+    startup_script_url = __upload_blob(client, bucket.name, os.path.abspath(f"shared/bin/startup-scripts/{startup_script}"), startup_script)
 
     return startup_script_url
 
@@ -279,19 +279,19 @@ def __upload_shutdown_script(client, project_id: str, image_family: str, bucket)
         logger.error(f"Unsupported OS family: {dist}")
         raise("There is no shutdown script for the selected OS family.")
     # read the template 
-    with open(f"./bin/shutdown-scripts/{script_template}", "r") as f:
+    with open(f"./shared/bin/shutdown-scripts/{script_template}", "r") as f:
         template = Template(f.read())
 
 
     # render the template 
     rendered_template = template.render()
     # write the rendered template to a file
-    with open(f"./bin/shutdown-scripts/{shutdown_script}", "w") as f:
+    with open(f"./shared/bin/shutdown-scripts/{shutdown_script}", "w") as f:
         f.write(rendered_template)
 
 
     # upload the startup script to the bucket
-    shutdown_script_url = __upload_blob(client, bucket.name, os.path.abspath(f"bin/shutdown-scripts/{shutdown_script}"), shutdown_script)
+    shutdown_script_url = __upload_blob(client, bucket.name, os.path.abspath(f"shared/bin/shutdown-scripts/{shutdown_script}"), shutdown_script)
 
     return shutdown_script_url
 
