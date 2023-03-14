@@ -1,4 +1,6 @@
 import functools
+import uuid
+import threading
 from flask import (
   flash, g, redirect, render_template, request, session, url_for, jsonify
 )
@@ -8,6 +10,7 @@ from utils.exceptions import InvalidJsonException
 from core.create_cluster import create_cluster
 from core.update_cluster import update_cluster
 from flask_restx import Resource, Api, Namespace, fields
+
 
 # create cluster namespace 
 api = Namespace('cluster', description='Cluster operations')
@@ -65,8 +68,15 @@ class ClusterList(Resource):
             logger.info(f"Parameters parsed, cluster is {cluster}")
 
             # create cluster
-            create_cluster(gcp_project, cluster)
-            return api.payload, 201
+            job_id = str(uuid.uuid4())
+            threading.Thread(target=functools.partial(create_cluster, gcp_project, cluster), name=job_id).start()
+            # create_cluster(gcp_project, cluster)
+            return {
+                'name': job_id,
+                'cluster_name': cluster.name,
+                'type': 'Cluster Creation',
+                'status': 'PENDING'
+            }, 201
         except InvalidJsonException as e:
             logger.error(f"Error parsing the json object: {e}")
             return {'error': "Error parsing the json object"}, 400
