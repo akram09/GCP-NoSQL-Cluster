@@ -1,6 +1,8 @@
 import os
 from flask import Flask, g, Blueprint
 from flask_restx import Api
+from api.routes.cluster import api as cluster_api
+from api.routes.job import api as job_api
 
 
 # create the api blueprint 
@@ -10,8 +12,10 @@ api_blueprint = Blueprint('api', __name__, url_prefix='/api/v1')
 api = Api(api_blueprint, version='1.0', title='GCP Cluster API', description='A simple API to create GCP clusters')
 
 # add the cluster namespace to the api
-from api.routes.cluster import api as cluster_api
 api.add_namespace(cluster_api)
+# add the job namespace to the api
+api.add_namespace(job_api)
+
 
 
 

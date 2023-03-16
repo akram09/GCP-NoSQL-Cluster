@@ -4,4 +4,9 @@ class InvalidJsonException(Exception):
     pass
 
 
+class InternalException(Exception):
+    pass
 
+
+class GCPSecretNotFoundException(InternalException):
+    description = "The supplied GCP secret was not found, and there was no default credentials supplied."

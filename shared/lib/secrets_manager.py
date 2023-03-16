@@ -3,11 +3,7 @@ import google_crc32c
 from google.cloud import secretmanager
 from loguru import logger
 import google.oauth2.credentials
-
-
-
-
-
+from utils.exceptions import GCPSecretNotFoundException
 
 
 def setup_secret_manager(project, cluster, couchbase_params):
@@ -30,7 +26,7 @@ def setup_secret_manager(project, cluster, couchbase_params):
         secret = __check_secret(client, project.project_id, secret_name)
         if secret is None:
             logger.info("Couchbase secret don't exists ")
-            exit(1)
+            raise GCPSecretNotFoundException(f"Secret {secret_name} not found")
         else:
             logger.info("Couchbase secret already exists")
             logger.info(f"The cluster will use the 'latest' version of secret {secret}")

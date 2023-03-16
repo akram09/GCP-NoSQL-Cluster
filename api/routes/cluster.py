@@ -10,6 +10,8 @@ from utils.exceptions import InvalidJsonException
 from core.create_cluster import create_cluster
 from core.update_cluster import update_cluster
 from flask_restx import Resource, Api, Namespace, fields
+from api.cache import add_job
+from api.internal.threads import CreateClusterThread, UpdateClusterThread
 
 
 # create cluster namespace 
@@ -44,7 +46,6 @@ cluster_model = api.model('Cluster', {
     'region': fields.String(required=True, description='The region of the cluster'),
     'storage': fields.Nested(storage_model, required=True, description='The storage definition'),
     'template': fields.Nested(template_model, required=False, description='The template definition'),
-
 })
 
 
@@ -69,7 +70,10 @@ class ClusterList(Resource):
 
             # create cluster
             job_id = str(uuid.uuid4())
-            threading.Thread(target=functools.partial(create_cluster, gcp_project, cluster), name=job_id).start()
+            thread = CreateClusterThread(job_id, gcp_project, cluster)
+            thread.start()
+            # threading.Thread(target=functools.partial(create_cluster, gcp_project, cluster), name=job_id).start()
+            add_job(job_id, cluster.name, 'Cluster Creation', 'PENDING')
             # create_cluster(gcp_project, cluster)
             return {
                 'name': job_id,
