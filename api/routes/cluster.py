@@ -39,6 +39,11 @@ template_model = api.model('Template', {
     'disks': fields.List(fields.Nested(disk_model), required=False, description='The disks to use'),
 })
 
+couchbase_creds_model = api.model('CouchbaseCreds', {
+    'username': fields.String(required=True, description='The username to use'),
+    'password': fields.String(required=True, description='The password to use'),
+})
+
 # create cluster model
 cluster_model = api.model('Cluster', {
     'name': fields.String(read_only=True, required=True, description='The name of the cluster'),
@@ -46,6 +51,7 @@ cluster_model = api.model('Cluster', {
     'region': fields.String(required=True, description='The region of the cluster'),
     'storage': fields.Nested(storage_model, required=True, description='The storage definition'),
     'template': fields.Nested(template_model, required=False, description='The template definition'),
+    'couchbase': fields.Nested(couchbase_creds_model, required=False, description='The couchbase credentials'),
 })
 
 
