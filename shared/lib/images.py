@@ -1,6 +1,7 @@
 import google.oauth2.credentials
 from loguru import logger
 from google.cloud import compute_v1
+from utils.exceptions import GCPImageNotFoundException
 
 
 
@@ -42,4 +43,4 @@ def __get_image_from_family(client, image_project, family: str) -> compute_v1.Im
         return newest_image
     except Exception as e:
         logger.error(f"Error getting image from family {family}: {e}")
-        raise e
+        raise GCPImageNotFoundException(f"Error getting image from family {family}: {e}")

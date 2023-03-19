@@ -1,7 +1,7 @@
 from loguru import logger
 from utils.shared import check_gcp_params
 from utils.args import cluster_from_args
-from core.create_cluster import create_cluster
+from shared.core.create_cluster import create_cluster
 
 
 

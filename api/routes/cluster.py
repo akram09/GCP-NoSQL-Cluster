@@ -7,10 +7,10 @@ from flask import (
 from utils.parse_requests import parse_cluster_def_from_json
 from loguru import logger
 from utils.exceptions import InvalidJsonException
-from core.create_cluster import create_cluster
-from core.update_cluster import update_cluster
+from shared.core.create_cluster import create_cluster
+from shared.core.update_cluster import update_cluster
 from flask_restx import Resource, Api, Namespace, fields
-from api.cache import add_job
+from api.internal.cache import add_job
 from api.internal.threads import CreateClusterThread, UpdateClusterThread
 
 
@@ -72,9 +72,7 @@ class ClusterList(Resource):
             job_id = str(uuid.uuid4())
             thread = CreateClusterThread(job_id, gcp_project, cluster)
             thread.start()
-            # threading.Thread(target=functools.partial(create_cluster, gcp_project, cluster), name=job_id).start()
             add_job(job_id, cluster.name, 'Cluster Creation', 'PENDING')
-            # create_cluster(gcp_project, cluster)
             return {
                 'name': job_id,
                 'cluster_name': cluster.name,

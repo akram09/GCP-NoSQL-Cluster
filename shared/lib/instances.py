@@ -3,6 +3,7 @@ import time
 from google.cloud import compute_v1
 from utils.shared import wait_for_extended_operation
 import google.oauth2.credentials
+from utils.exceptions import GCPInstanceSerialOutputException
 
 
 
@@ -55,4 +56,4 @@ def __get_instance_serial_output(
         return output.contents
     except Exception as e:
         logger.error(f"Error getting serial port output from instance {instance_name}: {e}")
-        raise e
+        raise GCPInstanceSerialOutputException(f"Error getting serial port output from instance {instance_name}: {e}")

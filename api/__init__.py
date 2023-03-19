@@ -36,11 +36,6 @@ def create_app(gcp_project, test_config=None):
 
     # register the cluster blueprint
     app.register_blueprint(api_blueprint)
-    # ensure the instance folder exists
-    try:
-        os.makedirs(app.instance_path)
-    except OSError:
-        pass
     return app
 
 

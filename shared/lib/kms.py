@@ -3,6 +3,7 @@ import uuid
 from loguru import logger
 from google.cloud import kms
 import google.oauth2.credentials
+from utils.exceptions import GCPKMSKeyCreationFailedException, GCPKMSKeyRingCreationFailedException, GCPKMSKeyPermissionAssignmentFailedException
 
 
 
@@ -97,7 +98,7 @@ def __create_key_ring(client, project_id, location_id, key_ring_id):
     except Exception as e:
         logger.error(f"Error creating key ring {key_ring_id} in project {project_id}")
         logger.error(e)
-        exit(1)
+        raise GCPKMSKeyRingCreationFailedException(f"Error creating key ring {key_ring_id} in project {project_id}")
 
 
 # get key ring 
@@ -161,7 +162,8 @@ def __create_key_symmetric_encrypt_decrypt(client, project_id, location_id, key_
     except Exception as e:
         logger.error(f"Error creating key {key_id} in key ring {key_ring_id} in project {project_id}")
         logger.error(e)
-        exit(1)
+        raise GCPKMSKeyCreationFailedException(f"Error creating key {key_id} in key ring {key_ring_id} in project {project_id}")
+
 
 
 def __assign_permission_to_storage(client, project_id, key_ring_id, key_id, location):
@@ -185,7 +187,7 @@ def __assign_permission_to_storage(client, project_id, key_ring_id, key_id, loca
     except Exception as e:
         logger.error(f"Error assigning permission to storage for key {key_id} in key ring {key_ring_id} in project {project_id}")
         logger.error(e)
-        exit(1)
+        raise GCPKMSKeyPermissionAssignmentFailedException(f"Error assigning permission to storage for key {key_id} in key ring {key_ring_id} in project {project_id}")
     logger.success(f"Assigned permission to storage for key {key_id} in key ring {key_ring_id} in project {project_id}")
 
 

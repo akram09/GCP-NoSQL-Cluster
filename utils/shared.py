@@ -5,6 +5,7 @@ from loguru import logger
 from utils.env import get_env_project_id, check_application_credentials, check_compute_engine_service_account_email, check_storage_service_account_email, check_service_account_oauth_token
 from shared.entities.gcp_project import GCPProject
 from google.api_core.extended_operation import ExtendedOperation
+from utils.exceptions import GCPOperationFailedException
 
 # Check parameters
 def check_gcp_params(args):
@@ -83,7 +84,7 @@ def wait_for_extended_operation(
             f"Error during {verbose_name} {operation.name}: {operation.error_message}"
         )
         logger.error(f"Operation ID: {operation.name}")
-        raise operation.exception() or RuntimeError(operation.error_message)
+        raise GCPOperationFailedException(operation.error_message)
 
     if operation.warnings:
         logger.warning(f"Warnings during {verbose_name} {operation.name}:")

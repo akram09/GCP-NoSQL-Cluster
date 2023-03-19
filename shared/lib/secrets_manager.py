@@ -3,7 +3,7 @@ import google_crc32c
 from google.cloud import secretmanager
 from loguru import logger
 import google.oauth2.credentials
-from utils.exceptions import GCPSecretNotFoundException
+from utils.exceptions import GCPSecretNotFoundException, GCPSecretCreationFailedException, GCPSecretVersionCreationFailedException
 
 
 def setup_secret_manager(project, cluster, couchbase_params):
@@ -125,7 +125,7 @@ def __create_secret(client, project_id, secret_name):
     except Exception as e:
         logger.error(f"Error creating secret {secret_name}.")
         logger.error(e)
-        exit(1)
+        raise GCPSecretCreationFailedException(f"Error creating secret {secret_name}.")
 
 
 # add the secret version
@@ -149,6 +149,6 @@ def __add_latest_secret_version(client, project_id, secret_name, secret_value):
     except Exception as e:
         logger.error(f"Error adding secret version for {secret_name}.")
         logger.error(e)
-        exit(1)
+        raise GCPSecretVersionCreationFailedException(f"Error adding secret version for {secret_name}.")
 
 

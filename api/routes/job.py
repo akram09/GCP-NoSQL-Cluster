@@ -8,7 +8,7 @@ from utils.parse_requests import parse_cluster_def_from_json
 from loguru import logger
 from utils.exceptions import InvalidJsonException
 from flask_restx import Resource, Api, Namespace, fields
-from api.cache import check_job, get_job, update_job_status
+from api.internal.cache import check_job, get_job, update_job_status
 
 # create job namespace 
 api = Namespace('job', description='Job operations')
@@ -35,11 +35,12 @@ class Job(Resource):
     @api.response(404, 'Job not found')
     @api.response(500, 'Error getting the job')
     def get(self, job_id):
-        print(threading.enumerate())
+        threads = threading.enumerate()
+        threads_names = [thread.name for thread in threads]
         # check first if the job is in the jobs dictionary
         if check_job(job_id):
             # check if a thread with the given id exists
-            if job_id in threading.enumerate():
+            if job_id in threads_names:
                 return get_job(job_id), 200
             else:
                 if get_job(job_id)['status'] == 'FAILED':

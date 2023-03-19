@@ -13,8 +13,11 @@ def add_job(job_id, cluster_name, job_type, status):
     }
 
 # update the status of a job
-def update_job_status(job_id, status):
+def update_job_status(job_id, status, message=None):
     jobs[job_id]['status'] = status
+    if message:
+        jobs[job_id]['message'] = message
+
 
 
 # check if the job is in the jobs dictionary  

@@ -3,6 +3,7 @@ from google.cloud import storage
 import os
 from jinja2 import Template
 import google.oauth2.credentials
+from utils.exceptions import GCPStorageBucketCreationFailedException, GCPUnsupportedOSFamilyException
 
 
 
@@ -126,7 +127,7 @@ def __create_bucket(storage_client, bucket_name, location, key):
             logger.info(f"Bucket {bucket.name} created.")
         except Exception as e:
             logger.error(f"Error creating bucket {bucket_name} in {location} with error: {e}")
-            raise e
+            raise GCPStorageBucketCreationFailedException(f"Error creating bucket {bucket_name} in {location} with error: {e}")
     else:
         logger.info(f"Bucket {bucket.name} exists.")
 
@@ -229,7 +230,7 @@ def __upload_startup_script(client, project_id: str, image_family: str, bucket, 
         script_template = "startup-script-suse.j2"
     else:
         logger.error(f"Unsupported OS family: {dist}")
-        raise("There is no startup script for the selected OS family.")
+        raise GCPUnsupportedOSFamilyException(f"Unsupported OS family: {dist}")
 
 
     # read the template 
@@ -277,7 +278,7 @@ def __upload_shutdown_script(client, project_id: str, image_family: str, bucket)
         script_template = "shutdown-script-suse.j2"
     else:
         logger.error(f"Unsupported OS family: {dist}")
-        raise("There is no shutdown script for the selected OS family.")
+        raise GCPUnsupportedOSFamilyException(f"Unsupported OS family: {dist}")
     # read the template 
     with open(f"./shared/bin/shutdown-scripts/{script_template}", "r") as f:
         template = Template(f.read())

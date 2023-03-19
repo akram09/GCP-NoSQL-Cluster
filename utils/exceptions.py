@@ -5,8 +5,43 @@ class InvalidJsonException(Exception):
 
 
 class InternalException(Exception):
-    pass
+    def __init__(self, message=None):
+        if message:
+            self.message = message
+        else:
+            self.message = "An internal error occurred."
 
 
 class GCPSecretNotFoundException(InternalException):
-    description = "The supplied GCP secret was not found, and there was no default credentials supplied."
+    pass
+
+
+class GCPStorageBucketCreationFailedException(InternalException):
+    pass
+
+class GCPUnsupportedOSFamilyException(InternalException):            
+    pass
+
+class GCPSecretCreationFailedException(InternalException):
+    pass
+
+class GCPSecretVersionCreationFailedException(InternalException):
+    pass
+
+class GCPKMSKeyCreationFailedException(InternalException):
+    pass
+
+class GCPKMSKeyPermissionAssignmentFailedException(InternalException):
+    pass
+
+class GCPKMSKeyRingCreationFailedException(InternalException):
+    pass
+    
+class GCPInstanceSerialOutputException(InternalException):
+    pass
+
+class GCPImageNotFoundException(InternalException):
+    pass
+
+class GCPOperationFailedException(InternalException): 
+    pass
