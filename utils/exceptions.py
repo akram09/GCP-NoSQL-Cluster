@@ -45,3 +45,7 @@ class GCPImageNotFoundException(InternalException):
 
 class GCPOperationFailedException(InternalException): 
     pass
+
+
+class UnAuthorizedException(Exception):
+    pass

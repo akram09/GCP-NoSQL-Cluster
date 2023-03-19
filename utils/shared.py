@@ -5,7 +5,7 @@ from loguru import logger
 from utils.env import get_env_project_id, check_application_credentials, check_compute_engine_service_account_email, check_storage_service_account_email, check_service_account_oauth_token
 from shared.entities.gcp_project import GCPProject
 from google.api_core.extended_operation import ExtendedOperation
-from utils.exceptions import GCPOperationFailedException
+from utils.exceptions import GCPOperationFailedException, UnAuthorizedException
 
 # Check parameters
 def check_gcp_params(args):
@@ -51,6 +51,21 @@ def check_gcp_params(args):
         except Exception as e:
             logger.error(e)
             exit(1)
+
+
+
+# check gcp params from dict 
+def check_gcp_params_from_request(args):
+    # check project id 
+    if args["project_id"] is None:
+        raise UnAuthorizedException("Project ID has not been provided")
+
+    # check oauth token 
+    if args["oauth_token"] is None:
+        raise UnAuthorizedException("Oauth token has not been provided")
+
+    return GCPProject(args["project_id"], auth_type="oauth", service_token=args["oauth_token"])
+        
 
 def wait_for_extended_operation(
     operation: ExtendedOperation, verbose_name: str = "operation", timeout: int = 1000

@@ -19,7 +19,7 @@ api.add_namespace(job_api)
 
 
 
-def create_app(gcp_project, test_config=None):
+def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     if test_config is None:
@@ -29,10 +29,6 @@ def create_app(gcp_project, test_config=None):
         # load the test config if passed in
         app.config.from_mapping(test_config)
    
-    # store a global object that can be accessed in all requests
-    @app.before_request
-    def before_request():
-        g.gcp_project = gcp_project
 
     # register the cluster blueprint
     app.register_blueprint(api_blueprint)

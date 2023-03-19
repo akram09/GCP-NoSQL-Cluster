@@ -5,6 +5,7 @@ from flask import (
   flash, g, redirect, render_template, request, session, url_for, jsonify
 )
 from utils.parse_requests import parse_cluster_def_from_json
+from utils.shared import check_gcp_params_from_request
 from loguru import logger
 from utils.exceptions import InvalidJsonException
 from shared.core.create_cluster import create_cluster
@@ -55,20 +56,43 @@ cluster_model = api.model('Cluster', {
 })
 
 
+
+
+# create a header parser
+header_parser = api.parser()
+header_parser.add_argument('Authorization', location='headers', required=True, help='Bearer token', default='fffffffff')
+# gcp project id 
+header_parser.add_argument('GCPProject', location='headers', required=True, help='GCP project id', default='upwork-project-gcp')
+
+
+
 # create a cluster list resource
 @api.route('/')
 class ClusterList(Resource):
     @api.doc('create_cluster')
-    @api.expect(cluster_model)
+    @api.expect(header_parser, cluster_model)
     @api.response(201, 'Cluster created')
     @api.response(400, 'Error parsing the json object')
+    @api.response(401, 'Unauthorized request')
     @api.response(500, 'Error creating the cluster')
     def post(self):
+        # get headers
+        headers = header_parser.parse_args()
+        gcp_args = {
+            'project_id': headers['GCPProject'],
+            'oauth_token': headers['Authorization']
+        }
+        gcp_project = None
+        # check gcp params
+        try:
+            gcp_project = check_gcp_params_from_request(gcp_args)
+        except UnAuthorizedException as e:
+            logger.error(f"Error checking gcp params: {e}")
+            return {
+                "error": e.message
+            }, 401
         # receive json data from the request
         data = request.get_json()
-        # get the gcp project from the global g
-        gcp_project = g.gcp_project
-
         logger.info("Parsing parameters ...")
         try:
             cluster = parse_cluster_def_from_json(data)
@@ -98,24 +122,45 @@ class ClusterList(Resource):
 class Cluster(Resource):
 
     @api.doc('update_cluster')
-    @api.expect(cluster_model)
+    @api.expect(cluster_model, header_parser)
     @api.response(201, 'Cluster updated')
     @api.response(400, 'Error parsing the json object')
+    @api.response(401, 'Unauthorized request')
     @api.response(500, 'Error updating the cluster')
     def put(self, cluster_name):
+        headers = header_parser.parse_args()
+        gcp_args = {
+            'project_id': headers['GCPProject'],
+            'oauth_token': headers['Authorization']
+        }
+        gcp_project = None
+        # check gcp params
+        try:
+            gcp_project = check_gcp_params_from_request(gcp_args)
+        except UnAuthorizedException as e:
+            logger.error(f"Error checking gcp params: {e}")
+            return {
+                "error": e.message
+            }, 401
         # receive json data from the request
         data = request.get_json()
-        # get the gcp project from the global g
-        gcp_project = g.gcp_project
 
         logger.info("Parsing parameters ...")
         try:
-            cluster = parse_cluster_def_from_json(data, cluster_name)
+            cluster = parse_cluster_def_from_json(data)
             logger.info(f"Parameters parsed, cluster is {cluster}")
 
             # update cluster
-            update_cluster(gcp_project, cluster)
-            return api.payload, 201
+            job_id = str(uuid.uuid4())
+            thread = UpdateClusterThread(job_id, gcp_project, cluster)
+            thread.start()
+            add_job(job_id, cluster.name, 'Cluster Update', 'PENDING')
+            return {
+                'name': job_id,
+                'cluster_name': cluster.name,
+                'type': 'Cluster Creation',
+                'status': 'PENDING'
+            }, 201
         except InvalidJsonException as e:
             logger.error(f"Error parsing the json object: {e}")
             return {'error': "Error parsing the json object"}, 400

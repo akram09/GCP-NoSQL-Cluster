@@ -21,7 +21,7 @@ class CreateClusterThread(threading.Thread):
             else:
                 update_job_status(self.name, 'FAILED')
             # log the error
-            logger.error(f"Error creating the cluster: {e}")
+            logger.error(f"Internal Error creating the cluster: {e}")
         except Exception as e:
             update_job_status(self.name, 'FAILED')
             # log the error

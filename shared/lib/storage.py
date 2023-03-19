@@ -110,7 +110,7 @@ def create_storage_client(project):
         service_token = project.service_token
         # create auth credentials
         credentials = google.oauth2.credentials.Credentials(token=service_token)
-        return storage.Client(credentials=credentials)
+        return storage.Client(project=project.project_id, credentials=credentials)
     # create the storage client
     return storage.Client()
 
