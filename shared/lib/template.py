@@ -171,7 +171,6 @@ def __update_template(
         wait_for_extended_operation(operation, "deleting old instance template")
     except Exception as e:
         logger.warning("Failed to delete old instance template, the template is already in use")
-        logger.error(e)
         return template
 
 

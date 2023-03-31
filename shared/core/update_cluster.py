@@ -1,6 +1,7 @@
 import uuid
 import os
 from loguru import logger
+from shared.entities.cluster import ClusterUpdateType
 from shared.lib.regional_managed_instance import create_region_managed_instance_group, list_region_instances, region_adding_instances, get_region_managed_instance_group, region_scaling_mig, update_region_managed_instance_group,create_region_instance_group_managers_client, apply_updates_to_instances
 from shared.lib.template import create_template, get_instance_template, update_template, create_instance_templates_client
 from shared.lib.firewall import setup_firewall
@@ -10,17 +11,18 @@ from shared.discovery.secrets_manager import setup_secret_manager
 # from lib.kms import setup_encryption_keys
 from shared.discovery.kms import setup_encryption_keys
 from shared.lib.images import get_image_from_family
+from utils.exceptions import GCPManagedInstanceGroupNotFoundException, GCPInstanceTemplateAlreadyExistsException
 
 
-
-def update_cluster(project, cluster):
+def update_cluster(project, cluster, update_type: ClusterUpdateType):
+    print(update_type)
     # check managed instance group 
     logger.info(f"Checking if managed instance group {cluster.name} exists ...")
     mig = get_region_managed_instance_group(project, cluster.region, cluster.name)
     if mig is None: 
         logger.info(f"Managed instance group {cluster.name} does not exist")
         logger.info("You will need to create a new instance group")
-        exit(1)
+        raise GCPManagedInstanceGroupNotFoundException(f"Managed instance group {cluster.name} does not exist")
     else:
         logger.debug(f"Regional managed instance group {cluster.name} already exists")
 
@@ -45,7 +47,7 @@ def update_cluster(project, cluster):
         instance_template = setup_instance_template(project, cluster, cluster.template, cluster.storage, scripts, key)
         # update managed instance group 
         logger.info("Updating managed instance group ...")
-        update_mig(project, cluster, instance_template)
+        update_mig(project, cluster, instance_template, update_type)
     logger.info("Checking firewall rules ...")
     setup_firewall(project, cluster.name)
     logger.success(f"Cluster {cluster.name} updated successfully")
@@ -80,18 +82,19 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
     else:
         logger.debug(f"Instance template {template_params.name} already exists")
         logger.error("To update the cluster we would need to create a new instance template with new name ")
-        exit(1)
+        raise GCPInstanceTemplateAlreadyExistsException(f"Instance template {template_params.name} already exists, To update the cluster we would need to create a new instance template with new name ")
     return template
 
 
 
-def update_mig(project, cluster, template):
+def update_mig(project, cluster, template, update_type: ClusterUpdateType):
     logger.debug(f"Updating regional managed instance group {cluster.name}")
     mig = update_region_managed_instance_group(project, cluster.region, cluster.name, template) 
     logger.debug(f"Regional managed instance group {cluster.name} updated")
-    # applying updates to the instances 
-    logger.debug(f"Applying updates in a rolling manner to the instances in regional managed instance group {cluster.name}")
-    apply_updates_to_instances(project, cluster.region, mig)
-    logger.debug(f"Scaling regional managed instance group {cluster.name} to {cluster.size}")
+    if update_type == ClusterUpdateType.UPDATE_AND_MIGRATE: 
+        # applying updates to the instances 
+        logger.debug(f"Applying updates in a rolling manner to the instances in regional managed instance group {cluster.name}")
+        apply_updates_to_instances(project, cluster.region, mig)
+        logger.debug(f"Scaling regional managed instance group {cluster.name} to {cluster.size}")
     region_scaling_mig(project, cluster.region, mig, mig.target_size, cluster.size)
 

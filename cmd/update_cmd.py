@@ -2,6 +2,7 @@ from loguru import logger
 from utils.shared import check_gcp_params
 from utils.args import cluster_from_args
 from shared.core.update_cluster import update_cluster
+from shared.entities.cluster import ClusterUpdateType
 
 
 
@@ -17,4 +18,4 @@ def update_cluster(args):
     logger.info(f"Parameters parsed, cluster is {cluster}")
 
     # update cluster
-    update_cluster(project, cluster)
+    update_cluster(project, cluster, ClusterUpdateType.UPDATE_AND_MIGRATE)

@@ -37,3 +37,6 @@ def check_job(job_id):
 def get_job(job_id):
     return jobs[job_id]
 
+# get the job list from the jobs dictionary
+def get_job_list():
+    return list(jobs.values())

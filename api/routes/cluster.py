@@ -7,16 +7,17 @@ from flask import (
 from utils.parse_requests import parse_cluster_def_from_json
 from utils.shared import check_gcp_params_from_request
 from loguru import logger
-from utils.exceptions import InvalidJsonException
+from utils.exceptions import InvalidJsonException, UnAuthorizedException    
 from shared.core.create_cluster import create_cluster
 from shared.core.update_cluster import update_cluster
+from shared.entities.cluster import ClusterUpdateType
 from flask_restx import Resource, Api, Namespace, fields
 from api.internal.cache import add_job
-from api.internal.threads import CreateClusterThread, UpdateClusterThread
+from api.internal.threads import CreateClusterThread, UpdateClusterThread, MigrateClusterThread
 
 
 # create cluster namespace 
-api = Namespace('cluster', description='Cluster operations')
+api = Namespace('clusters', description='Cluster operations')
 
 # create the storage model 
 storage_model = api.model('Storage', {
@@ -63,14 +64,21 @@ header_parser = api.parser()
 header_parser.add_argument('Authorization', location='headers', required=True, help='Bearer token', default='fffffffff')
 # gcp project id 
 header_parser.add_argument('GCPProject', location='headers', required=True, help='GCP project id', default='upwork-project-gcp')
+# gcp project number
+header_parser.add_argument('GCPProjectNumber', location='headers', required=True, help='GCP project number', default='1546856')
+
+
+# cluster update query parameters parser 
+cluster_update_parser = api.parser()
+cluster_update_parser.add_argument('migrate', location='args', type=int, help='Whether to migrate the cluster (0/1)', default=0)
 
 
 
 # create a cluster list resource
 @api.route('/')
 class ClusterList(Resource):
-    @api.doc('create_cluster')
-    @api.expect(header_parser, cluster_model)
+    @api.doc('create_cluster', description="API route to create a cluster, it receives the cluster parameters in JSON format and launch the cluster creation operation in the background. The route returns a job to check the status of the operation")
+    @api.expect(header_parser, cluster_model, validate=True)
     @api.response(201, 'Cluster created')
     @api.response(400, 'Error parsing the json object')
     @api.response(401, 'Unauthorized request')
@@ -80,7 +88,8 @@ class ClusterList(Resource):
         headers = header_parser.parse_args()
         gcp_args = {
             'project_id': headers['GCPProject'],
-            'oauth_token': headers['Authorization']
+            'oauth_token': headers['Authorization'],
+            'project_number': headers['GCPProjectNumber']
         }
         gcp_project = None
         # check gcp params
@@ -117,12 +126,12 @@ class ClusterList(Resource):
             return {'error': "Error creating the cluster"}, 500
 
 
-# create a cluster resource
+# update a cluster resource
 @api.route('/<string:cluster_name>')
 class Cluster(Resource):
 
-    @api.doc('update_cluster')
-    @api.expect(cluster_model, header_parser)
+    @api.doc('update_cluster', description="API route to update a cluster, it receives the cluster parameters in JSON format and launch the cluster update operation in the background. The route returns a job to check the status of the operation, NOTE: The cluster update can either be in the rolling mode or no migration mode depending on the parameter `migrate`") 
+    @api.expect(cluster_model, header_parser, cluster_update_parser, validate=True)
     @api.response(201, 'Cluster updated')
     @api.response(400, 'Error parsing the json object')
     @api.response(401, 'Unauthorized request')
@@ -131,7 +140,8 @@ class Cluster(Resource):
         headers = header_parser.parse_args()
         gcp_args = {
             'project_id': headers['GCPProject'],
-            'oauth_token': headers['Authorization']
+            'oauth_token': headers['Authorization'],
+            'project_number': headers['GCPProjectNumber']
         }
         gcp_project = None
         # check gcp params
@@ -148,17 +158,20 @@ class Cluster(Resource):
         logger.info("Parsing parameters ...")
         try:
             cluster = parse_cluster_def_from_json(data)
+            migrate = cluster_update_parser.parse_args()['migrate']
+            print(migrate)
+            cluster_update_type = ClusterUpdateType.UPDATE_AND_MIGRATE if migrate else ClusterUpdateType.UPDATE_NO_MIGRATE
             logger.info(f"Parameters parsed, cluster is {cluster}")
 
             # update cluster
             job_id = str(uuid.uuid4())
-            thread = UpdateClusterThread(job_id, gcp_project, cluster)
+            thread = UpdateClusterThread(job_id, gcp_project, cluster, cluster_update_type)
             thread.start()
             add_job(job_id, cluster.name, 'Cluster Update', 'PENDING')
             return {
                 'name': job_id,
                 'cluster_name': cluster.name,
-                'type': 'Cluster Creation',
+                'type': 'Cluster Update',
                 'status': 'PENDING'
             }, 201
         except InvalidJsonException as e:
@@ -170,3 +183,51 @@ class Cluster(Resource):
 
 
 
+
+cluster_migration_parser = api.parser()
+cluster_migration_parser.add_argument('cluster_region', location='args', required=True, type=str, help='Cluster region to migrate', default='us-central1')
+
+# migrate cluster to the last update
+@api.route('/<string:cluster_name>/migrate')
+class Cluster(Resource):
+
+    @api.doc('migrate_cluster', description="API route to migrate the cluster to the last update created. It returns a job to check the status of the operation") 
+    @api.expect(header_parser, cluster_update_parser)
+    @api.response(201, 'Cluster migrated')
+    @api.response(401, 'Unauthorized request')
+    @api.response(500, 'Error updating the cluster')
+    def post(self, cluster_name):
+        headers = header_parser.parse_args()
+        gcp_args = {
+            'project_id': headers['GCPProject'],
+            'oauth_token': headers['Authorization'],
+            'project_number': headers['GCPProjectNumber']
+        }
+        gcp_project = None
+
+        logger.info("Parsing parameters ...")
+        # check gcp params
+        try:
+            gcp_project = check_gcp_params_from_request(gcp_args)
+        except UnAuthorizedException as e:
+            logger.error(f"Error checking gcp params: {e}")
+            return {
+                "error": e.message
+            }, 401
+
+        try:
+            cluster_region = cluster_migration_parser.parse_args()['cluster_region']
+            # update cluster
+            job_id = str(uuid.uuid4())
+            thread = MigrateClusterThread(job_id, gcp_project, cluster_name, cluster_region)
+            thread.start()
+            add_job(job_id, cluster_name, 'Cluster Migrate', 'PENDING')
+            return {
+                'name': job_id,
+                'cluster_name': cluster_name,
+                'type': 'Cluster Migrate',
+                'status': 'PENDING'
+            }, 201
+        except Exception as e:
+            logger.error(f"Error updating the cluster: {e}")
+            return {'error': "Error updating the cluster"}, 500

@@ -49,3 +49,9 @@ class GCPOperationFailedException(InternalException):
 
 class UnAuthorizedException(Exception):
     pass
+
+class GCPManagedInstanceGroupNotFoundException(InternalException):
+    pass
+
+class GCPInstanceTemplateAlreadyExistsException(InternalException):
+    pass

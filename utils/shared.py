@@ -63,6 +63,12 @@ def check_gcp_params_from_request(args):
     # check oauth token 
     if args["oauth_token"] is None:
         raise UnAuthorizedException("Oauth token has not been provided")
+    if args["project_number"] is None:
+        raise UnAuthorizedException("Project number has not been provided")
+
+    # set env variables 
+    os.environ["COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL"] = f"{args['project_number']}-compute@developer.gserviceaccount.com"
+    os.environ["CLOUD_STORAGE_SERVICE_ACCOUNT_EMAIL"] = f"service-{args['project_number']}@gs-project-accounts.iam.gserviceaccount.com"
 
     return GCPProject(args["project_id"], auth_type="oauth", service_token=args["oauth_token"])
         
