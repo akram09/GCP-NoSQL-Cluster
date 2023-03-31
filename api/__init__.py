@@ -3,6 +3,8 @@ from flask import Flask, g, Blueprint
 from flask_restx import Api
 from api.routes.cluster import api as cluster_api
 from api.routes.job import api as job_api
+from api.config import Config
+from api.extensions import db, bcrypt
 
 
 # create the api blueprint 
@@ -24,12 +26,14 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     if test_config is None:
         # load the instance config, if it exists, when not testing
-        app.config.from_pyfile('config.py', silent=True)
+        app.config.from_object(Config)
     else:
         # load the test config if passed in
         app.config.from_mapping(test_config)
    
-
+    # initialize extensions
+    db.init_app(app)
+    bcrypt.init_app(app)
     # register the cluster blueprint
     app.register_blueprint(api_blueprint)
     return app
