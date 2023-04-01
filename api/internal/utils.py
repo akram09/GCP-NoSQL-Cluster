@@ -1,9 +1,10 @@
 from functools import wraps
-
 from flask import request
 from utils.exceptions import UnAuthorizedException, InternalException
 from api.models.user import User
 from loguru import logger
+
+
 
 # create a decorator function that check first if the token has been passed in the headers, then check if the token is valid by interacting with the database on the user model, and then check if the user has the role admin 
 def admin_required(f):
@@ -38,15 +39,14 @@ def admin_required(f):
 def check_token(token):
     # decode the token
     user = User.decode_auth_token(token)
-    print(user)
     if not user:
         raise UnAuthorizedException("Invalid token")
     role = user['role']
-    user_id = user['user_id']
+    user_id = user['id']
     # get the user from the database
     user = User.query.filter_by(id=user_id).first()
     # check if the user exists
     if not user:
-        raise UnAuthorizedException("User not found")
+        raise UnAuthorizedException("Invalid token")
     return user
 

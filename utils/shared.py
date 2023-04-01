@@ -57,20 +57,20 @@ def check_gcp_params(args):
 # check gcp params from dict 
 def check_gcp_params_from_request(args):
     # check project id 
-    if args["project_id"] is None:
+    if args["project-id"] is None:
         raise UnAuthorizedException("Project ID has not been provided")
 
-    # check oauth token 
-    if args["oauth_token"] is None:
-        raise UnAuthorizedException("Oauth token has not been provided")
-    if args["project_number"] is None:
+    if args["project-number"] is None:
         raise UnAuthorizedException("Project number has not been provided")
 
     # set env variables 
-    os.environ["COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL"] = f"{args['project_number']}-compute@developer.gserviceaccount.com"
-    os.environ["CLOUD_STORAGE_SERVICE_ACCOUNT_EMAIL"] = f"service-{args['project_number']}@gs-project-accounts.iam.gserviceaccount.com"
+    os.environ["COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL"] = f"{args['project-number']}-compute@developer.gserviceaccount.com"
+    os.environ["CLOUD_STORAGE_SERVICE_ACCOUNT_EMAIL"] = f"service-{args['project-number']}@gs-project-accounts.iam.gserviceaccount.com"
 
-    return GCPProject(args["project_id"], auth_type="oauth", service_token=args["oauth_token"])
+    if "SERVICE_ACCOUNT_OAUTH_TOKEN" not in os.environ:
+        raise InvalidOAUTHTokenException("No oauth token found")
+
+    return GCPProject(args["project-id"], auth_type="oauth", service_token=os.environ.get("SERVICE_ACCOUNT_OAUTH_TOKEN"))
         
 
 def wait_for_extended_operation(

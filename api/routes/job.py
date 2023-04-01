@@ -7,11 +7,11 @@ from flask import (
 from utils.parse_requests import parse_cluster_def_from_json
 from loguru import logger
 from utils.shared import check_gcp_params_from_request
-from utils.exceptions import InvalidJsonException, UnAuthorizedException
+from utils.exceptions import InvalidJsonException, UnAuthorizedException, InternalException
 from flask_restx import Resource, Api, Namespace, fields
 from api.internal.cache import check_job, get_job, update_job_status, get_job_list
-from api.routes.cluster import header_parser
 from api.internal.utils import admin_required
+from api.routes.cluster import gcp_parser, auth_token_parser
 
 # create job namespace 
 api = Namespace('jobs', description='Job operations')
@@ -39,25 +39,19 @@ class JobList(Resource):
     
     # get job list route
     @api.doc('get_job_list', description="API route to get the list of jobs and their status. The `status` parameter can be used to filter the jobs by status. The `type` parameter can be used to filter the jobs by type. The `cluster_name` parameter can be used to filter the jobs by cluster name.")
-    @api.expect(job_list_parser, header_parser, validate=True)
+    @api.expect(gcp_parser, job_list_parser, auth_token_parser, validate=True)
     @api.response(200, 'Job list found')
     @api.response(401, 'Unauthorized request')
     @api.response(500, 'Error getting the job list')
     @admin_required
     def get(self):
 
-        # get headers
-        headers = header_parser.parse_args()
-        gcp_args = {
-            'project_id': headers['GCPProject'],
-            'oauth_token': headers['Authorization'],
-            'project_number': headers['GCPProjectNumber']
-        }
+        gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params
         try:
             gcp_project = check_gcp_params_from_request(gcp_args)
-        except UnAuthorizedException as e:
+        except InternalException as e:
             logger.error(f"Error checking gcp params: {e}")
             return {
                 "error": e.message
@@ -85,25 +79,18 @@ class Job(Resource):
 
     # get job route, check in the current threads 
     @api.doc('get_job')
-    @api.expect(header_parser, validate=True)
+    @api.expect(gcp_parser, auth_token_parser, validate=True)
     @api.response(200, 'Job found')
     @api.response(401, 'Unauthorized request')
     @api.response(404, 'Job not found')
     @api.response(500, 'Error getting the job')
     def get(self, job_id):
-
-        # get headers
-        headers = header_parser.parse_args()
-        gcp_args = {
-            'project_id': headers['GCPProject'],
-            'oauth_token': headers['Authorization'],
-            'project_number': headers['GCPProjectNumber']
-        }
+        gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params
         try:
             gcp_project = check_gcp_params_from_request(gcp_args)
-        except UnAuthorizedException as e:
+        except InternalException as e:
             logger.error(f"Error checking gcp params: {e}")
             return {
                 "error": e.message

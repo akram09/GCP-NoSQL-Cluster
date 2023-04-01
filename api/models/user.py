@@ -29,7 +29,7 @@ class User(db.Model):
         :return: string
         """
         payload = {
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=3600),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1, minutes=60),
             'iat': datetime.datetime.utcnow(),
             'sub': {
                 'id': str(user_id),
@@ -41,7 +41,6 @@ class User(db.Model):
             app.config.get('SECRET_KEY')[0],
             algorithm='HS256'
         )
-        print(token)
         return token
 
     @staticmethod
@@ -52,12 +51,11 @@ class User(db.Model):
         :return: integer|string
         """
         try:
-            payload = jwt.decode("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzMDE3NzIsImlhdCI6MTY4MDI5ODE3Miwic3ViIjp7ImlkIjoiMTQiLCJyb2xlIjoiYWRtaW4ifX0.UIr_fh2IlcakfDLE7bMqPNhZE7ZUqhrkWrwWzOEOkZQ", app.config.get('SECRET_KEY')[0], algorithms='HS256')
+            payload = jwt.decode(auth_token, app.config.get('SECRET_KEY')[0], algorithms='HS256')
             return payload['sub']
         except jwt.ExpiredSignatureError:
             logger.error('Signature expired. Please log in again.')
             return None
         except jwt.InvalidTokenError as e :
-            print(e)
             logger.error('Invalid token. Please log in again.')
             return None

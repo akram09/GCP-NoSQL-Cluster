@@ -7,7 +7,7 @@ from flask import (
 from utils.parse_requests import parse_cluster_def_from_json
 from utils.shared import check_gcp_params_from_request
 from loguru import logger
-from utils.exceptions import InvalidJsonException, UnAuthorizedException    
+from utils.exceptions import InvalidJsonException, UnAuthorizedException, InternalException  
 from shared.core.create_cluster import create_cluster
 from shared.core.update_cluster import update_cluster
 from shared.entities.cluster import ClusterUpdateType
@@ -59,13 +59,15 @@ cluster_model = api.model('Cluster', {
 
 
 
-# create a header parser
-header_parser = api.parser()
-header_parser.add_argument('Authorization', location='headers', required=True, help='Bearer token', default='fffffffff')
+gcp_parser = api.parser()
 # gcp project id 
-header_parser.add_argument('GCPProject', location='headers', required=True, help='GCP project id', default='upwork-project-gcp')
+gcp_parser.add_argument('project-id', location='args', required=True, help='GCP project id', default='upwork-project-gcp')
 # gcp project number
-header_parser.add_argument('GCPProjectNumber', location='headers', required=True, help='GCP project number', default='1546856')
+gcp_parser.add_argument('project-number', location='args', required=True, help='GCP project number', default='1546856')
+
+
+auth_token_parser =api.parser()
+auth_token_parser.add_argument('Authorization', location='headers', required=True, help="Authentication token to access the api routes")
 
 
 # cluster update query parameters parser 
@@ -78,24 +80,18 @@ cluster_update_parser.add_argument('migrate', location='args', type=int, help='W
 @api.route('/')
 class ClusterList(Resource):
     @api.doc('create_cluster', description="API route to create a cluster, it receives the cluster parameters in JSON format and launch the cluster creation operation in the background. The route returns a job to check the status of the operation")
-    @api.expect(header_parser, cluster_model, validate=True)
+    @api.expect(gcp_parser, cluster_model, auth_token_parser, validate=True)
     @api.response(201, 'Cluster created')
     @api.response(400, 'Error parsing the json object')
     @api.response(401, 'Unauthorized request')
     @api.response(500, 'Error creating the cluster')
     def post(self):
-        # get headers
-        headers = header_parser.parse_args()
-        gcp_args = {
-            'project_id': headers['GCPProject'],
-            'oauth_token': headers['Authorization'],
-            'project_number': headers['GCPProjectNumber']
-        }
+        gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params
         try:
             gcp_project = check_gcp_params_from_request(gcp_args)
-        except UnAuthorizedException as e:
+        except InternalException as e:
             logger.error(f"Error checking gcp params: {e}")
             return {
                 "error": e.message
@@ -131,23 +127,18 @@ class ClusterList(Resource):
 class Cluster(Resource):
 
     @api.doc('update_cluster', description="API route to update a cluster, it receives the cluster parameters in JSON format and launch the cluster update operation in the background. The route returns a job to check the status of the operation, NOTE: The cluster update can either be in the rolling mode or no migration mode depending on the parameter `migrate`") 
-    @api.expect(cluster_model, header_parser, cluster_update_parser, validate=True)
+    @api.expect(cluster_model, gcp_parser, cluster_update_parser,auth_token_parser,validate=True)
     @api.response(201, 'Cluster updated')
     @api.response(400, 'Error parsing the json object')
     @api.response(401, 'Unauthorized request')
     @api.response(500, 'Error updating the cluster')
     def put(self, cluster_name):
-        headers = header_parser.parse_args()
-        gcp_args = {
-            'project_id': headers['GCPProject'],
-            'oauth_token': headers['Authorization'],
-            'project_number': headers['GCPProjectNumber']
-        }
+        gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params
         try:
             gcp_project = check_gcp_params_from_request(gcp_args)
-        except UnAuthorizedException as e:
+        except InternalException as e:
             logger.error(f"Error checking gcp params: {e}")
             return {
                 "error": e.message
@@ -159,7 +150,6 @@ class Cluster(Resource):
         try:
             cluster = parse_cluster_def_from_json(data)
             migrate = cluster_update_parser.parse_args()['migrate']
-            print(migrate)
             cluster_update_type = ClusterUpdateType.UPDATE_AND_MIGRATE if migrate else ClusterUpdateType.UPDATE_NO_MIGRATE
             logger.info(f"Parameters parsed, cluster is {cluster}")
 
@@ -192,24 +182,17 @@ cluster_migration_parser.add_argument('cluster_region', location='args', require
 class Cluster(Resource):
 
     @api.doc('migrate_cluster', description="API route to migrate the cluster to the last update created. It returns a job to check the status of the operation") 
-    @api.expect(header_parser, cluster_update_parser)
+    @api.expect(gcp_parser, cluster_update_parser, auth_token_parser, validate=True)
     @api.response(201, 'Cluster migrated')
     @api.response(401, 'Unauthorized request')
     @api.response(500, 'Error updating the cluster')
     def post(self, cluster_name):
-        headers = header_parser.parse_args()
-        gcp_args = {
-            'project_id': headers['GCPProject'],
-            'oauth_token': headers['Authorization'],
-            'project_number': headers['GCPProjectNumber']
-        }
+        gcp_args = gcp_parser.parse_args()
         gcp_project = None
-
-        logger.info("Parsing parameters ...")
         # check gcp params
         try:
             gcp_project = check_gcp_params_from_request(gcp_args)
-        except UnAuthorizedException as e:
+        except InternalException as e:
             logger.error(f"Error checking gcp params: {e}")
             return {
                 "error": e.message
