@@ -55,3 +55,6 @@ class GCPManagedInstanceGroupNotFoundException(InternalException):
 
 class GCPInstanceTemplateAlreadyExistsException(InternalException):
     pass
+
+class UserWithUsernameAlreadyExistsException(InternalException):
+    pass

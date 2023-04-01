@@ -11,6 +11,7 @@ from utils.exceptions import InvalidJsonException, UnAuthorizedException
 from flask_restx import Resource, Api, Namespace, fields
 from api.internal.cache import check_job, get_job, update_job_status, get_job_list
 from api.routes.cluster import header_parser
+from api.internal.utils import admin_required
 
 # create job namespace 
 api = Namespace('jobs', description='Job operations')
@@ -42,6 +43,7 @@ class JobList(Resource):
     @api.response(200, 'Job list found')
     @api.response(401, 'Unauthorized request')
     @api.response(500, 'Error getting the job list')
+    @admin_required
     def get(self):
 
         # get headers

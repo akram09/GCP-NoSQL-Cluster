@@ -10,15 +10,22 @@ from utils.shared import check_gcp_params_from_request
 from utils.exceptions import InvalidJsonException, UnAuthorizedException
 from flask_restx import Resource, Api, Namespace, fields
 from api.extensions import db
+from api.models.user import User
+from sqlalchemy.exc import IntegrityError
+from utils.exceptions import UserWithUsernameAlreadyExistsException
+
 # create auth namespace
 api = Namespace('auth', description='Authentications related operations')
 
 
-# create the auth user 
-auth_user = api.model('AuthUser', {
+registration_request = api.model('RegistrationRequest', {
+    'username': fields.String(required=True, description='The username of the user'),
+    'password': fields.String(required=True, description='The password of the user'),
+    'role': fields.String(required=True, description='The role of the user')
+})
+login_request = api.model('LoginRequest', {
     'username': fields.String(required=True, description='The username of the user'),
     'password': fields.String(required=True, description='The password of the user')
-    'role': fields.String(required=True, description='The role of the user')
 })
 
 
@@ -27,7 +34,7 @@ class AuthRegister(Resource):
     
     # register a new user route
     @api.doc('register a new user', description="API route to register a new user. The `username` parameter is the username of the user. The `password` parameter is the password of the user. The `role` parameter is the role of the user.")
-    @api.expect(auth_user, validate=True)
+    @api.expect(registration_request, validate=True)
     @api.response(200, 'User registered')
     @api.response(400, 'Bad request')
     @api.response(500, 'Error registering the user')
@@ -38,51 +45,64 @@ class AuthRegister(Resource):
         if not data:
             raise InvalidJsonException()
         # create a new user
-        user = Users(
+        user = User(
             username=data['username'],
-            password=bcrypt.generate_password_hash(data['password']).decode('utf-8'),
+            password=data['password'],
             role=data['role']
         )
         # add the user to the database
         db.session.add(user)
-        db.session.commit()
+        try: 
+            db.session.commit()
+            # generate jwt token 
+            token = user.encode_auth_token(user.id, user.role)
+            return {
+                "message": "User registered",
+                "token": token
+            }, 200
+        # catch integrity error
+        except IntegrityError:
+            return {
+                "message": "User with username already exists"
+            }, 400
+        except Exception as e:
+            raise e
+            logger.error(e)
+            return {
+                "message": "Error registering the user"
+            }, 500
+
+# login route
+@api.route('/login')
+class AuthLogin(Resource):
+    @api.doc('login a user', description="API route to login a user. The `username` parameter is the username of the user. The `password` parameter is the password of the user.")
+    @api.expect(login_request, validate=True)
+    @api.response(200, 'User logged in')
+    @api.response(400, 'Bad request')
+    @api.response(500, 'Error logging in the user')
+    def post(self):
+        # get the json data
+        data = request.get_json()
+        # check if the json data is valid
+        if not data:
+            raise InvalidJsonException()
+        # get the user
+        user = User.query.filter_by(username=data['username']).first()
+        # check if the user exists
+        if not user:
+            return {
+                "message": "User does not exist"
+            }, 400
+        # check if the password is correct
+        if not user.check_password(data['password']):
+            return {
+                "message": "Incorrect password"
+            }, 400
+        # generate jwt token
+        token = user.encode_auth_token(user.id, user.role)
         return {
-            "message": "User registered"
+            "message": "User logged in",
+            "token": token
         }, 200
 
-
-
-@api.route('/<string:job_id>')
-class Job(Resource):
-
-    # get job route, check in the current threads 
-    @api.doc('get_job')
-    @api.expect(header_parser, validate=True)
-    @api.response(200, 'Job found')
-    @api.response(401, 'Unauthorized request')
-    @api.response(404, 'Job not found')
-    @api.response(500, 'Error getting the job')
-    def get(self, job_id):
-
-        # get headers
-        headers = header_parser.parse_args()
-        gcp_args = {
-            'project_id': headers['GCPProject'],
-            'oauth_token': headers['Authorization'],
-            'project_number': headers['GCPProjectNumber']
-        }
-        gcp_project = None
-        # check gcp params
-        try:
-            gcp_project = check_gcp_params_from_request(gcp_args)
-        except UnAuthorizedException as e:
-            logger.error(f"Error checking gcp params: {e}")
-            return {
-                "error": e.message
-            }, 401
-        # check first if the job is in the jobs dictionary
-        if check_job(job_id):
-            get_job(job_id), 200
-        else:
-            return {'error': 'Job not found'}, 404
 
