@@ -10,16 +10,16 @@ import google.oauth2.credentials
 
 
 # public function 
-def create_template(project, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url):
+def create_template(project, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url, tags):
     client = create_instance_templates_client(project)
-    return __create_template(client, project.project_id, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url)
+    return __create_template(client, project.project_id, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url, tags)
 
 
 
 # public function 
-def update_template(project, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url):
+def update_template(project, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url, tags):
     client = create_instance_templates_client(project)
-    return __update_template(client, project.project_id, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url)
+    return __update_template(client, project.project_id, template_name, machine_type, machine_image, disks, key, startup_script_url, shutdown_script_url, tags)
 
 
 
@@ -67,7 +67,8 @@ def __create_template(
     disks, 
     key,
     startup_script_url: str,
-    shutdown_script_url: str
+    shutdown_script_url: str,
+    labels
     ):
     """
     Create a new instance template with the provided name and a specific
@@ -101,6 +102,9 @@ def __create_template(
     template.properties.tags = tags 
     template.properties.machine_type = machine_type
     template.properties.network_interfaces = [network_interface]
+
+    # setting labels
+    template.properties.labels  = labels
 
     # setting disks
     template_disks = list(map(lambda disk_params: disk_from_image(disk_params.type, disk_params.size, key, disk_params.boot, machine_image.self_link) , disks))
@@ -159,6 +163,7 @@ def __update_template(
     key,
     startup_script_url: str,
     shutdown_script_url: str,
+    labels
     ) -> compute_v1.InstanceTemplate:
 
     logger.info(f"Updating instance template {template.name}...")
@@ -206,6 +211,9 @@ def __update_template(
     if template.properties.metadata.items[1].value != shutdown_script_url:
         logger.debug("Shutdown script url is different, updating shutdown script url")
         template.properties.metadata.items[1].value = shutdown_script_url
+
+    # setting labels
+    template.properties.labels  = labels
 
     # send the update request
 

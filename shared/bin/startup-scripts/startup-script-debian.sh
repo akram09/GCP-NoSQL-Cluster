@@ -18,7 +18,7 @@ sudo apt-get install -y couchbase-server-community
 rm couchbase-release-1.0-amd64.deb
 
 # Get credentials from gcp secrets manager
-export COUCHBASE_CREDS=$(gcloud secrets versions access latest --secret=mig-14-admin-creds)
+export COUCHBASE_CREDS=$(gcloud secrets versions access latest --secret=mig-12-admin-creds)
 # the user and password are separated by a colon
 export COUCHBASE_USER=$(echo $COUCHBASE_CREDS | cut -d: -f1)
 export COUCHBASE_PASSWORD=$(echo $COUCHBASE_CREDS | cut -d: -f2)
@@ -29,7 +29,7 @@ export NODE_HOSTNAME=$(hostname -s).$(hostname -d)
 
 # check if we are in the master node based on the hostname -a  
 # if we are in the master node, we will init the cluster
-if [[ $(hostname) == mig-14-000 ]]; then
+if [[ $(hostname) == mig-12-000 ]]; then
     echo "Init the cluster" 
     sleep 60
     /opt/couchbase/bin/couchbase-cli cluster-init -c $NODE_HOSTNAME:8091 --cluster-username=$COUCHBASE_USER --cluster-password=$COUCHBASE_PASSWORD

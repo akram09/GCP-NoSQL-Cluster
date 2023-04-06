@@ -1,10 +1,11 @@
 from loguru import logger
 class TemplateParams:
-    def __init__(self, name, machine_type="e2-micro", image_project="debian-cloud", image_family="debian-11"):
+    def __init__(self, name, machine_type="e2-micro", image_project="debian-cloud", image_family="debian-11", template_labels = {}):
         self.name = name
         self.machine_type = machine_type
         self.image_project = image_project
         self.image_family = image_family
+        self.labels = template_labels
     def set_disks(self, disks):
         # check if the disk is a list
         if isinstance(disks, list):

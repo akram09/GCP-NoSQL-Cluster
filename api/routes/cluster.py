@@ -14,6 +14,8 @@ from shared.entities.cluster import ClusterUpdateType
 from flask_restx import Resource, Api, Namespace, fields
 from api.internal.cache import add_job
 from api.internal.threads import CreateClusterThread, UpdateClusterThread, MigrateClusterThread
+from api.internal.utils import admin_required
+
 
 
 # create cluster namespace 
@@ -39,6 +41,7 @@ template_model = api.model('Template', {
     'image_family': fields.String(required=False, description='The image family to use'),
     'image_project': fields.String(required=False, description='The image project to use'),
     'disks': fields.List(fields.Nested(disk_model), required=False, description='The disks to use'),
+    'tags': fields.List(fields.String(description="Tags value"))
 })
 
 couchbase_creds_model = api.model('CouchbaseCreds', {
@@ -85,6 +88,7 @@ class ClusterList(Resource):
     @api.response(400, 'Error parsing the json object')
     @api.response(401, 'Unauthorized request')
     @api.response(500, 'Error creating the cluster')
+    @admin_required
     def post(self):
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
@@ -132,6 +136,7 @@ class Cluster(Resource):
     @api.response(400, 'Error parsing the json object')
     @api.response(401, 'Unauthorized request')
     @api.response(500, 'Error updating the cluster')
+    @admin_required
     def put(self, cluster_name):
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
@@ -186,6 +191,7 @@ class Cluster(Resource):
     @api.response(201, 'Cluster migrated')
     @api.response(401, 'Unauthorized request')
     @api.response(500, 'Error updating the cluster')
+    @admin_required
     def post(self, cluster_name):
         gcp_args = gcp_parser.parse_args()
         gcp_project = None

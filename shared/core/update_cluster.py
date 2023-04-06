@@ -15,7 +15,6 @@ from utils.exceptions import GCPManagedInstanceGroupNotFoundException, GCPInstan
 
 
 def update_cluster(project, cluster, update_type: ClusterUpdateType):
-    print(update_type)
     # check managed instance group 
     logger.info(f"Checking if managed instance group {cluster.name} exists ...")
     mig = get_region_managed_instance_group(project, cluster.region, cluster.name)
@@ -77,7 +76,8 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
             template_params.disks,
             encryption_key,
             scripts_urls['startup_script_url'],
-            scripts_urls['shutdown_script_url']
+            scripts_urls['shutdown_script_url'],
+            template.labels
         )
     else:
         logger.debug(f"Instance template {template_params.name} already exists")

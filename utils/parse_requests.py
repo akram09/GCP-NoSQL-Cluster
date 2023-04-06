@@ -61,6 +61,14 @@ def parse_cluster_def_from_json(cluster_dict):
         else:
             # if no disks are defined, use the default one
             template_params.set_disks([{'size': 10, 'type': 'pd-standard',  'boot': True}])
+        if 'labels' in template:
+            labels = template['labels']
+            if isinstance(labels, list):
+                raise InvalidJsonException("Cluster labels should be a map of key value and not an array")
+            for key, value in labels.items():
+                if isinstance(value, dict):
+                    raise InvalidJsonException("Cluster labels should be a map of key value, and the values should not contain objects")
+            template_params.labels = labels
 
     
     cluster.template = template_params

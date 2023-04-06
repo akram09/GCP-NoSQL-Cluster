@@ -67,7 +67,7 @@ def setup_managed_instance_group(project, cluster, template):
 
 
 def setup_instance_template(project, cluster_params, template_params, storage_params, scripts_urls, encryption_key): 
-
+    print(template_params)
     #Get the machine image from the project and family
     machine_image = get_image_from_family(project, template_params.image_project, template_params.image_family)
 
@@ -84,7 +84,8 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
             template_params.disks,
             encryption_key,
             scripts_urls['startup_script_url'],
-            scripts_urls['shutdown_script_url']
+            scripts_urls['shutdown_script_url'],
+            template_params.labels
         )
     else:
         logger.debug(f"Instance template {template_params.name} already exists")
@@ -97,7 +98,8 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
             template_params.disks,
             encryption_key,
             scripts_urls['startup_script_url'],
-            scripts_urls['shutdown_script_url']
+            scripts_urls['shutdown_script_url'],
+            template_params.labels
         )
     return template
     
