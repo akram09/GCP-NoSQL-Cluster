@@ -35,7 +35,9 @@ def check_service_account_oauth_token():
         if os.environ.get("SERVICE_ACCOUNT_OAUTH_TOKEN") =="":
             raise Exception("SERVICE_ACCOUNT_OAUTH_TOKEN environment variable is empty")
 
-
+# update service account oauth token 
+def update_service_account_oauth_token(token):
+    os.environ["SERVICE_ACCOUNT_OAUTH_TOKEN"] = token
 # checking compute engine service account email
 def check_compute_engine_service_account_email():
     if "COMPUTE_ENGINE_SERVICE_ACCOUNT_EMAIL" not in os.environ:

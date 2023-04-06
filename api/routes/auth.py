@@ -1,4 +1,5 @@
 import functools
+import os
 import uuid
 import threading
 from flask import (
@@ -7,13 +8,13 @@ from flask import (
 from utils.parse_requests import parse_cluster_def_from_json
 from loguru import logger
 from utils.shared import check_gcp_params_from_request
-from utils.exceptions import InvalidJsonException, UnAuthorizedException
+from utils.exceptions import InvalidJsonException, UnAuthorizedException, UserWithUsernameAlreadyExistsException
+from utils.env import update_service_account_oauth_token
 from flask_restx import Resource, Api, Namespace, fields
 from api.extensions import db
 from api.models.user import User
 from sqlalchemy.exc import IntegrityError
-from utils.exceptions import UserWithUsernameAlreadyExistsException
-
+from api.internal.utils import admin_required
 # create auth namespace
 api = Namespace('auth', description='Authentications related operations')
 
@@ -26,6 +27,10 @@ registration_request = api.model('RegistrationRequest', {
 login_request = api.model('LoginRequest', {
     'username': fields.String(required=True, description='The username of the user'),
     'password': fields.String(required=True, description='The password of the user')
+})
+
+oauth_token_update_request = api.model('OAuthToken', {
+    'token': fields.String(required=True, description="The Google Cloud Platform OAuth token")
 })
 
 
@@ -106,3 +111,26 @@ class AuthLogin(Resource):
         }, 200
 
 
+# oauth tokens
+@api.route('/oauth/tokens')
+class OauthTokens(Resource):
+    @api.doc('Update OAuth token', description="API route to update the Google Cloud Platform OAuth token that is used by this server to authenticate all the requests")
+    @api.expect(oauth_token_update_request, validate=True)
+    @api.response(200, 'Token Updated')
+    @api.response(400, 'Bad request')
+    @admin_required
+    def post(self):
+        # get the json data
+        data = request.get_json()
+        # check if the json data is valid
+        if not data:
+            raise InvalidJsonException()
+        # get the token 
+        token = data["token"]
+
+        update_service_account_oauth_token(token)
+        print(os.environ)
+
+        return {
+            "message": "OAuth token updated successfully",
+        }, 200
