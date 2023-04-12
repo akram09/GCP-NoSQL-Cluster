@@ -35,13 +35,17 @@ disk_model = api.model('Disk', {
     'boot': fields.Boolean(required=True, description='Whether the disk is a boot disk'),
 })
 
-template_model = api.model('Template', {
+labels_model = api.model('Label', {
+    "key": fields.String(required=True, description="Label key", default="key"),
+    "value": fields.String(required=True, description="Label value", default="value"),
+})
+template_model = api.model('ClusterTemplate', {
     'name': fields.String(required=False, description='The name of the template'),
     'machine_type': fields.String(required=False, description='The machine type to use'),
     'image_family': fields.String(required=False, description='The image family to use'),
     'image_project': fields.String(required=False, description='The image project to use'),
     'disks': fields.List(fields.Nested(disk_model), required=False, description='The disks to use'),
-    'tags': fields.List(fields.String(description="Tags value"))
+    'labels': fields.List(fields.Nested(labels_model), required=False, description="Instance Template labels")
 })
 
 couchbase_creds_model = api.model('CouchbaseCreds', {

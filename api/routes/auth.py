@@ -114,7 +114,7 @@ class AuthLogin(Resource):
 # oauth tokens
 @api.route('/oauth/tokens')
 class OauthTokens(Resource):
-    @api.doc('Update OAuth token', description="API route to update the Google Cloud Platform OAuth token that is used by this server to authenticate all the requests")
+    # @api.doc('Update OAuth token', description="API route to update the Google Cloud Platform OAuth token that is used by this server to authenticate all the requests")
     @api.expect(oauth_token_update_request, validate=True)
     @api.response(200, 'Token Updated')
     @api.response(400, 'Bad request')
@@ -129,7 +129,6 @@ class OauthTokens(Resource):
         token = data["token"]
 
         update_service_account_oauth_token(token)
-        print(os.environ)
 
         return {
             "message": "OAuth token updated successfully",

@@ -6,6 +6,33 @@ from shared.core.apply_migration_cluster import apply_migration
 from shared.entities.cluster import ClusterUpdateType
 from utils.exceptions import InternalException
 from api.internal.cache import update_job_status
+from shared.lib.template import create_template, update_template
+
+class AsyncOperationThread(threading.Thread): 
+    def __init__(self, job_id, gcp_project, operation, **operation_params):
+        threading.Thread.__init__(self)
+        self.name = job_id
+        self.gcp_project = gcp_project
+        self.operation = operation
+        self.operation_params = operation_params
+
+    def run(self):
+        try:
+            self.operation(self.gcp_project, **self.operation_params)
+            update_job_status(self.name, 'COMPLETED')
+        except InternalException as e:
+            if e.message:
+                update_job_status(self.name, 'FAILED', e.message)
+            else:
+                update_job_status(self.name, 'FAILED')
+            # log the error
+            logger.error(f"Internal Error: {e}")
+        except Exception as e:
+            update_job_status(self.name, 'FAILED')
+            # log the error
+            logger.error(f"Error: {e.message}")
+
+
 
 
 class CreateClusterThread(threading.Thread):
@@ -79,3 +106,4 @@ class MigrateClusterThread(threading.Thread):
             update_job_status(self.name, 'FAILED')
             # log the error
             logger.error(f"Error updating the cluster: {e}")
+

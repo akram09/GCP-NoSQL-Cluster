@@ -4,6 +4,7 @@ from flask_restx import Api
 from api.routes.cluster import api as cluster_api
 from api.routes.job import api as job_api
 from api.routes.auth import api as auth_api
+from api.routes.template import api as template_api
 from api.config import Config
 from api.extensions import db, bcrypt
 
@@ -20,6 +21,8 @@ api.add_namespace(cluster_api)
 api.add_namespace(job_api)
 # add auth namespace to the api
 api.add_namespace(auth_api)
+# add template namespace to the api
+api.add_namespace(template_api)
 
 
 

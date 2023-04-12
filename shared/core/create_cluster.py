@@ -67,7 +67,6 @@ def setup_managed_instance_group(project, cluster, template):
 
 
 def setup_instance_template(project, cluster_params, template_params, storage_params, scripts_urls, encryption_key): 
-    print(template_params)
     #Get the machine image from the project and family
     machine_image = get_image_from_family(project, template_params.image_project, template_params.image_family)
 
