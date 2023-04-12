@@ -11,7 +11,7 @@ from utils.exceptions import InvalidJsonException, UnAuthorizedException, Intern
 from flask_restx import Resource, Api, Namespace, fields
 from api.internal.cache import add_job
 from api.internal.threads import AsyncOperationThread
-from shared.core.instance_template_operations import create_instance_template
+from shared.core.instance_template_operations import create_instance_template, update_instance_template
 from api.internal.utils import admin_required
 
 
@@ -101,3 +101,48 @@ class InstanceTemplateList(Resource):
             logger.error(f"Error creating the instance template: {e}")
             return {'error': "Error creating the instance template"}, 500
 
+
+@api.route('/<string:template_name>')
+class InstanceTemplate(Resource):
+    @api.doc('Update Instance Template', description="API route to update an Instance Template, it receives the parameters in JSON format and launch the instance template update operation in the background. The route returns a job to check the status of the operation")
+    @api.expect(gcp_parser, template_model, auth_token_parser, validate=True)
+    @api.response(201, 'Instance Template updated')
+    @api.response(400, 'Error parsing the json object')
+    @api.response(401, 'Unauthorized request')
+    @api.response(500, 'Error updating the instance template')
+    @admin_required
+    def put(self, template_name):
+        gcp_args = gcp_parser.parse_args()
+        gcp_project = None
+        # check gcp params
+        try:
+            gcp_project = check_gcp_params_from_request(gcp_args)
+        except InternalException as e:
+            logger.error(f"Error checking gcp params: {e}")
+            return {
+                "error": e.message
+            }, 401
+        # receive json data from the request
+        data = request.get_json()
+        logger.info("Parsing parameters ...")
+        try:
+            template = parse_instance_template_from_json(data)
+            logger.info(f"Parameters parsed, template is {template}")
+            
+            # run the async operation
+            job_id = str(uuid.uuid4())
+            thread = AsyncOperationThread(job_id, gcp_project, operation=update_instance_template, instance_template_params=template)
+            thread.start()
+            add_job(job_id, template.name, 'Instance Template Update', 'PENDING')
+            return {
+                'name': job_id,
+                'instance_template_name': template.name,
+                'type': 'Instance Template Update',
+                'status': 'PENDING'
+            }, 201
+        except InvalidJsonException as e:
+            logger.error(f"Error parsing the json object: {e}")
+            return {'error': "Error parsing the json object"}, 400
+        except Exception as e:
+            logger.error(f"Error updating the instance template: {e}")
+            return {'error': "Error updating the instance template"}, 500
