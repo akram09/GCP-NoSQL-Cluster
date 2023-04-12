@@ -11,7 +11,7 @@ from utils.exceptions import InvalidJsonException, UnAuthorizedException, Intern
 from flask_restx import Resource, Api, Namespace, fields
 from api.internal.cache import add_job
 from api.internal.threads import AsyncOperationThread
-from shared.core.instance_template_operations import create_instance_template, update_instance_template
+from shared.core.instance_template_operations import create_instance_template, update_instance_template, delete_instance_template
 from api.internal.utils import admin_required
 
 
@@ -146,3 +146,36 @@ class InstanceTemplate(Resource):
         except Exception as e:
             logger.error(f"Error updating the instance template: {e}")
             return {'error': "Error updating the instance template"}, 500
+
+    @api.doc('Delete Instance Template', description="API route to delete an Instance Template, it receives the parameters in JSON format and launch the instance template deletion operation in the background. The route returns a job to check the status of the operation")
+    @api.expect(gcp_parser, auth_token_parser, validate=True)
+    @api.response(201, 'Instance Template deleted')
+    @api.response(500, 'Error deleting the instance template')
+    @admin_required
+    def delete(self, template_name):
+        gcp_args = gcp_parser.parse_args()
+        gcp_project = None
+        # check gcp params
+        try:
+            gcp_project = check_gcp_params_from_request(gcp_args)
+        except InternalException as e:
+            logger.error(f"Error checking gcp params: {e}")
+            return {
+                "error": e.message
+            }, 401
+        try:
+            # run the async operation
+            job_id = str(uuid.uuid4())
+            thread = AsyncOperationThread(job_id, gcp_project, operation=delete_instance_template, instance_template_name=template_name)
+            thread.start()
+            add_job(job_id, template_name, 'Instance Template Deletion', 'PENDING')
+            return {
+                'name': job_id,
+                'instance_template_name': template_name,
+                'type': 'Instance Template Deletion',
+                'status': 'PENDING'
+            }, 201
+        except Exception as e:
+            logger.error(f"Error deleting the instance template: {e}")
+            return {'error': "Error deleting the instance template"}, 500
+

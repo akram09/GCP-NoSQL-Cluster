@@ -1,5 +1,5 @@
 from shared.lib.kms import setup_encryption_keys
-from shared.lib.template import create_template, get_instance_template, update_template
+from shared.lib.template import create_template, get_instance_template, update_template, delete_template
 from loguru import logger
 from utils.exceptions import GCPInstanceTemplateAlreadyExistsException, GCPInstanceTemplateNotFoundException
 from shared.lib.images import get_image_from_family
@@ -61,3 +61,14 @@ def update_instance_template(gcp_project, instance_template_params):
             instance_template_params.shutdown_script_url,
             instance_template_params.labels 
         )
+def delete_instance_template(gcp_project, instance_template_name):
+    logger.info(f"Deleting instance template {instance_template_name} ...")
+    template = get_instance_template(gcp_project, instance_template_name)
+    # check if there is a template existing
+    if template is None:
+        logger.info(f"Instance template {instance_template_name} does not exist")
+        raise GCPInstanceTemplateNotFoundException(f"Instance template {instance_template_name} does not exist")
+    else:
+        logger.debug(f"Instance template {instance_template_name} found ")
+        # delete instance template
+        delete_template(gcp_project, instance_template_name)

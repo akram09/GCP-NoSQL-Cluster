@@ -34,7 +34,7 @@ def list_instance_templates(project):
     return __list_instance_templates(client, project.project_id)
 
 # public function 
-def delete_instance_template(project, template_name):
+def delete_template(project, template_name):
     client = create_instance_templates_client(project)
     return __delete_instance_template(client, project.project_id, template_name)
 
@@ -277,6 +277,7 @@ def __delete_instance_template(template_client, project_id: str, template_name: 
         project=project_id, instance_template=template_name
     )
     wait_for_extended_operation(operation, "instance template deletion")
+    logger.success("Instance template deleted!")
     return
 
 
