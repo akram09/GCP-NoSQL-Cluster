@@ -64,3 +64,6 @@ class UserWithUsernameAlreadyExistsException(InternalException):
 
 class InvalidOAUTHTokenException(InternalException):
     pass
+
+class GCPManagedInstanceGroupAlreadyExistsException(InternalException):
+    pass

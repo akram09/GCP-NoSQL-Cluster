@@ -63,6 +63,14 @@ def list_region_instances(project, region, instance_group_name):
     # list the instances in the managed instance group
     return __list_region_instances(instance_group_manager_client, project.project_id, region, instance_group_name)
 
+# public function
+# delete the managed instance group 
+def delete_region_managed_instance_group(project, region, instance_group_name):
+    # create the instance group managers client
+    instance_group_manager_client = create_region_instance_group_managers_client(project)
+    # delete the managed instance group
+    return __delete_region_managed_instance_group(instance_group_manager_client, project.project_id, region, instance_group_name)
+
 
 
 # create region instance group managers client 
@@ -407,6 +415,26 @@ def __list_region_instances(instance_group_manager_client, project_id, region, i
     )
     # return list 
     return instances
+
+
+# delete regional managed instance group 
+def __delete_region_managed_instance_group(instance_group_manager_client, project_id, region, instance_group_name):
+    # create instance group manager request
+    instance_group_manager_request = compute_v1.DeleteRegionInstanceGroupManagerRequest(
+        project=project_id, region=region, instance_group_manager=instance_group_name
+    )
+    # delete instance group manager
+    operation = instance_group_manager_client.delete(
+        request=instance_group_manager_request
+    )
+    # wait for operation to complete
+    try:
+        wait_for_extended_operation(operation, project_id)
+    except Exception as e:
+        logger.error(f"Error deleting instance group manager: {e}")
+        raise e
+    logger.success(f"Instance group manager {instance_group_name} deleted")
+
 
 
 # create managed instance group request 
