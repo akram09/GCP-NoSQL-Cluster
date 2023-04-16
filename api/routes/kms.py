@@ -62,14 +62,16 @@ class KeyRingList(Resource):
             gcp_project = check_gcp_params_from_request(gcp_args)
         except InternalException as e:
             logger.error(e)
-            return jsonify({'message': e.message}), 500
+            return {'error': e.message}, 500
         except Exception as e:
             logger.error(e)
-            return jsonify({'message': e.message}), 500
+            return {'error': e.message}, 500
 
         # parse the json object
         try:
-            key_ring  = key_ring_model.parse_args()
+            key_ring  = request.get_json()
+            if not key_ring:
+                raise InvalidJsonException('Invalid json object')
 
             job_id = str(uuid.uuid4()) 
             thread = AsyncOperationThread(job_id, gcp_project, operation=key_ring_create, key_ring_params=key_ring)
@@ -83,7 +85,7 @@ class KeyRingList(Resource):
             }, 201
         except Exception as e:
             logger.error(e)
-            return jsonify({'message': 'Error parsing the json object'}), 400
+            return {'error': "Error creating the key ring"}, 500
 
 
 @api.route('/keyRing/AsymetricKey')
@@ -103,14 +105,16 @@ class AsymetricKeyList(Resource):
             gcp_project = check_gcp_params_from_request(gcp_args)
         except InternalException as e:
             logger.error(e)
-            return jsonify({'message': e.message}), 500
+            return {'error': e.message}, 500
         except Exception as e:
             logger.error(e)
-            return jsonify({'message': e.message}), 500
+            return {'error': e.message}, 500
 
         # parse the json object
         try:
-            key_params  = key_model.parse_args()
+            key_params  = request.get_json()
+            if not key_params:
+                raise InvalidJsonException('Invalid json object')
             job_id = str(uuid.uuid4()) 
             thread = AsyncOperationThread(job_id, gcp_project, operation=key_create, key_params=key_params)
             thread.start()

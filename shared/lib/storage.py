@@ -119,27 +119,30 @@ def create_storage_client(project):
 
 def __create_bucket(storage_client, bucket_name, location, key):
     """Creates a new bucket."""
-    bucket = storage_client.bucket(bucket_name)
-    if not bucket.exists():
-        try:
-            bucket = storage_client.create_bucket(bucket_name, location=location)
-            # Set the bucket's default encryption key
-            logger.info(f"Bucket {bucket.name} created.")
-        except Exception as e:
-            logger.error(f"Error creating bucket {bucket_name} in {location} with error: {e}")
-            raise GCPStorageBucketCreationFailedException(f"Error creating bucket {bucket_name} in {location} with error: {e}")
-    else:
+    try:
+        # check if bucket exists
+        bucket = storage_client.get_bucket(bucket_name)
         logger.info(f"Bucket {bucket.name} exists.")
-
+    except:
+        logger.info(f"Bucket {bucket_name} does not exist.")
+        # create the bucket
+        storage_client.create_bucket(bucket_name, location=location)
+        logger.info(f"Bucket {bucket_name} created.")
+    
+    # get the bucket
+    bucket = storage_client.get_bucket(bucket_name)
     logger.info(f"Setting default encryption key for {bucket.name} bucket...")
     # check if the key is dict 
-    if isinstance(key, dict):
+    if isinstance(key, str):
+        key_name = key
+    elif isinstance(key, dict):
         # get the key name
         key_name = key['name']
     else:
         key_name = key.name
     bucket.default_kms_key_name = key_name
     bucket.patch()
+    logger.success(f"Default encryption key for {bucket.name} bucket set to {key_name}.")
     return bucket
 
 
