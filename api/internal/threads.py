@@ -30,7 +30,7 @@ class AsyncOperationThread(threading.Thread):
         except Exception as e:
             update_job_status(self.name, 'FAILED')
             # log the error
-            logger.error(f"Error: {e.message}")
+            logger.error(f"Error: {e}")
 
 
 

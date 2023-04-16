@@ -5,6 +5,9 @@ from api.routes.cluster import api as cluster_api
 from api.routes.job import api as job_api
 from api.routes.auth import api as auth_api
 from api.routes.template import api as template_api
+from api.routes.managed_instance import api as managed_instance_api
+from api.routes.kms import api as kms_api
+from api.routes.storage import api as storage_api
 from api.config import Config
 from api.extensions import db, bcrypt
 
@@ -23,6 +26,13 @@ api.add_namespace(job_api)
 api.add_namespace(auth_api)
 # add template namespace to the api
 api.add_namespace(template_api)
+# add managed instance namespace to the api_blueprint
+api.add_namespace(managed_instance_api)
+# add kms namespace to the api_blueprint
+api.add_namespace(kms_api)
+# add storage namespace to the api_blueprint
+api.add_namespace(storage_api)
+
 
 
 

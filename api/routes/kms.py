@@ -14,7 +14,7 @@ from api.internal.threads import AsyncOperationThread
 from shared.core.kms_operations import key_ring_create, key_create
 from api.internal.utils import admin_required
 
-api = Namespace('KeyManagementService', description='Key Management Service operations')
+api = Namespace('kms', description='Key Management Service operations')
 
 
 

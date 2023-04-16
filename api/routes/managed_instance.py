@@ -36,6 +36,7 @@ auth_token_parser.add_argument('Authorization', location='headers', required=Tru
 managed_instance_group_model = api.model('ManagedInstanceGroup', {
     'name': fields.String(required=True, description='Name of the Managed Instance Group'),
     'region': fields.String(required=True, description='Region of the Managed Instance Group'),
+    'size': fields.Integer(required=False, description='Size of the Managed Instance Group'),
     'instance_template': fields.String(required=True, description='Instance Template of the Managed Instance Group'),
 })
 
@@ -77,7 +78,8 @@ class managedInstanceGroupList(Resource):
             managed_instance_group_params = {
                     'name': data.get('name'),
                     'region': data.get('region'),
-                    'instance_template': data.get('instance_template')
+                    'instance_template': data.get('instance_template'),
+                    'size': data.get('size')
                     }
             logger.info(f"Parameters parsed, managed instance group is {managed_instance_group_params}")
             
@@ -132,10 +134,13 @@ class ManagedInstanceGroup(Resource):
                 raise InvalidJsonException()
             if not data.get('instance_template'):
                 raise InvalidJsonException()
+            if not data.get('size'):
+                raise InvalidJsonException()
             managed_instance_group_params = {
                     'name': data.get('name'),
                     'region': data.get('region'),
-                    'instance_template': data.get('instance_template')
+                    'instance_template': data.get('instance_template'),
+                    'size': data.get('size')
             }
             logger.info(f"Parameters parsed, managed instance group is {managed_instance_group_params}")
             
@@ -196,3 +201,9 @@ class ManagedInstanceGroup(Resource):
                 'type': 'Managed Instance Group Deletion',
                 'status': 'PENDING'
             }, 201
+        except InvalidJsonException as e:
+            logger.error(f"Error parsing the json object: {e}")
+            return {'error': "Error parsing the json object"}, 400
+        except Exception as e:
+            logger.error(f"Error deleting the managed instance group: {e}")
+            return {'error': "Error deleting the managed instance group"}, 500
