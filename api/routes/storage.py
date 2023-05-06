@@ -10,7 +10,7 @@ from utils.shared import check_gcp_params_from_request
 from loguru import logger
 from utils.exceptions import InvalidJsonException, UnAuthorizedException, InternalException  
 from flask_restx import Resource, Api, Namespace, fields
-from api.internal.cache import add_job
+from api.internal.jobs_controller import add_job
 from api.internal.threads import AsyncOperationThread
 from shared.core.storage_operations import create_gcp_bucket, delete_gcp_bucket 
 from api.internal.utils import admin_required
@@ -68,13 +68,14 @@ class BucketList(Resource):
         try:
             bucket_params = request.get_json()
             job_id = str(uuid.uuid4()) 
-            add_job(job_id, bucket_params['name'], 'GCP Storage Bucket Creation', 'PENDING')
+            add_job(job_id, bucket_params['name'], 'GCP Storage Bucket Creation', 'PENDING', gcp_project.project_id)
             thread = AsyncOperationThread(job_id, gcp_project, operation=create_gcp_bucket, bucket_params=bucket_params)
             thread.start()
             return {
                 'name': job_id,
                 'Bucket Name': bucket_params['name'],
                 'type': 'GCP Storage Bucket Creation',
+                'project-id': gcp_project.project_id, 
                 'status': 'PENDING'
             }, 201
         except Exception as e:
@@ -110,13 +111,14 @@ class Bucket(Resource):
         try:
             bucket_params = {'name': bucket_name}
             job_id = str(uuid.uuid4()) 
-            add_job(job_id, bucket_name, 'GCP Storage Bucket Delete', 'PENDING')
+            add_job(job_id, bucket_name, 'GCP Storage Bucket Delete', 'PENDING', gcp_project.project_id)
             thread = AsyncOperationThread(job_id, gcp_project, operation=delete_gcp_bucket, bucket_params=bucket_params)
             thread.start()
             return {
                 'name': job_id,
                 'Bucket Name': bucket_name,
                 'type': 'GCP Storage Bucket Delete',
+                'project-id': gcp_project.project_id, 
                 'status': 'PENDING'
             }, 201
         except Exception as e:

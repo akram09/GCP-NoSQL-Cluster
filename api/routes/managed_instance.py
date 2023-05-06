@@ -10,7 +10,7 @@ from utils.shared import check_gcp_params_from_request
 from loguru import logger
 from utils.exceptions import InvalidJsonException, UnAuthorizedException, InternalException  
 from flask_restx import Resource, Api, Namespace, fields
-from api.internal.cache import add_job
+from api.internal.jobs_controller import add_job
 from api.internal.threads import AsyncOperationThread
 from shared.core.managed_instance_group_operations import create_managed_instance_group, update_managed_instance_group, delete_managed_instance_group
 from api.internal.utils import admin_required
@@ -91,11 +91,12 @@ class managedInstanceGroupList(Resource):
             job_id = str(uuid.uuid4())
             thread = AsyncOperationThread(job_id, gcp_project, operation=create_managed_instance_group, managed_instance_group_params=managed_instance_group_params)
             thread.start()
-            add_job(job_id, managed_instance_group_params['name'], 'Managed Instance Group Creation', 'PENDING')
+            add_job(job_id, managed_instance_group_params['name'], 'Managed Instance Group Creation', 'PENDING', gcp_project.project_id)
             return {
                 'name': job_id,
                 'Managed Instance Group Name': managed_instance_group_params['name'],
                 'type': 'Managed Instance Group Creation',
+                'project-id': gcp_project.project_id, 
                 'status': 'PENDING'
             }, 201
         except InvalidJsonException as e:
@@ -155,11 +156,12 @@ class ManagedInstanceGroup(Resource):
             job_id = str(uuid.uuid4())
             thread = AsyncOperationThread(job_id, gcp_project, operation=update_managed_instance_group, managed_instance_group_params=managed_instance_group_params)
             thread.start()
-            add_job(job_id, managed_instance_group_params['name'], 'Managed Instance Group Update', 'PENDING')
+            add_job(job_id, managed_instance_group_params['name'], 'Managed Instance Group Update', 'PENDING', gcp_project.project_id)
             return {
                 'name': job_id,
                 'Managed Instance Group Name': managed_instance_group_params['name'],
                 'type': 'Managed Instance Group Update',
+                'project-id': gcp_project.project_id, 
                 'status': 'PENDING'
             }, 201
         except InvalidJsonException as e:
@@ -204,10 +206,11 @@ class ManagedInstanceGroup(Resource):
             job_id = str(uuid.uuid4())
             thread = AsyncOperationThread(job_id, gcp_project, operation=delete_managed_instance_group, managed_instance_group_params=managed_instance_group_params)
             thread.start()
-            add_job(job_id, managed_instance_group_params['name'], 'Managed Instance Group Deletion', 'PENDING')
+            add_job(job_id, managed_instance_group_params['name'], 'Managed Instance Group Deletion', 'PENDING', gcp_project.project_id)
             return {
                 'name': job_id,
                 'Managed Instance Group Name': managed_instance_group_params['name'],
+                'project-id': gcp_project.project_id, 
                 'type': 'Managed Instance Group Deletion',
                 'status': 'PENDING'
             }, 201

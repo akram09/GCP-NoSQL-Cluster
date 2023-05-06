@@ -6,7 +6,7 @@ from shared.core.update_cluster import update_cluster
 from shared.core.apply_migration_cluster import apply_migration
 from shared.entities.cluster import ClusterUpdateType
 from utils.exceptions import InternalException
-from api.internal.cache import update_job_status
+from api.internal.jobs_controller import update_job_status
 from shared.lib.template import create_template, update_template
 from api.extensions import couchbase
 
@@ -48,7 +48,6 @@ class CreateClusterThread(threading.Thread):
     def run(self):
         try:
             res =couchbase.insert('clusters', self.cluster.name, self.cluster_json)
-            print(res)
             create_cluster(self.gcp_project, self.cluster)
             update_job_status(self.name, 'COMPLETED')
         except InternalException as e:

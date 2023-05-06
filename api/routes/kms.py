@@ -10,6 +10,7 @@ from utils.shared import check_gcp_params_from_request
 from loguru import logger
 from utils.exceptions import InvalidJsonException, UnAuthorizedException, InternalException  
 from flask_restx import Resource, Api, Namespace, fields
+from api.internal.jobs_controller import add_job
 from api.internal.cache import add_job
 from api.internal.threads import AsyncOperationThread
 from shared.core.kms_operations import key_ring_create, key_create
@@ -80,11 +81,12 @@ class KeyRingList(Resource):
             job_id = str(uuid.uuid4()) 
             thread = AsyncOperationThread(job_id, gcp_project, operation=key_ring_create, key_ring_params=key_ring)
             thread.start()
-            add_job(job_id, key_ring['name'], 'Key Ring Creation', 'PENDING')
+            add_job(job_id, key_ring['name'], 'Key Ring Creation', 'PENDING', gcp_project.project_id)
             return {
                 'name': job_id,
                 'Key Ring Name': key_ring['name'],
                 'type': 'Key Ring Creation',
+                'project-id': gcp_project.project_id, 
                 'status': 'PENDING'
             }, 201
         except Exception as e:
@@ -125,11 +127,12 @@ class AsymetricKeyList(Resource):
             job_id = str(uuid.uuid4()) 
             thread = AsyncOperationThread(job_id, gcp_project, operation=key_create, key_params=key_params)
             thread.start()
-            add_job(job_id, key_params['name'], 'Asymetric Key Creation', 'PENDING')
+            add_job(job_id, key_params['name'], 'Asymetric Key Creation', 'PENDING', gcp_project.project-id)
             return {
                 'name': job_id,
                 'Key Name': key_params['name'],
                 'type': 'Asymetric Key Creation',
+                'project-id': gcp_project.project_id, 
                 'status': 'PENDING'
             }, 201
         except Exception as e:

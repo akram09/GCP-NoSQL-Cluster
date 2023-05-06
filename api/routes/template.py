@@ -10,7 +10,7 @@ from utils.shared import check_gcp_params_from_request
 from loguru import logger
 from utils.exceptions import InvalidJsonException, UnAuthorizedException, InternalException  
 from flask_restx import Resource, Api, Namespace, fields
-from api.internal.cache import add_job
+from api.internal.jobs_controller import add_job
 from api.internal.threads import AsyncOperationThread
 from shared.core.instance_template_operations import create_instance_template, update_instance_template, delete_instance_template
 from api.internal.utils import admin_required
@@ -91,11 +91,12 @@ class InstanceTemplateList(Resource):
             job_id = str(uuid.uuid4())
             thread = AsyncOperationThread(job_id, gcp_project, operation=create_instance_template, instance_template_params=template)
             thread.start()
-            add_job(job_id, template.name, 'Instance Template Creation', 'PENDING')
+            add_job(job_id, template.name, 'Instance Template Creation', 'PENDING', gcp_project.project_id)
             return {
                 'name': job_id,
                 'instance_template_name': template.name,
                 'type': 'Instance Template Creation',
+                'project-id': gcp_project.project_id, 
                 'status': 'PENDING'
             }, 201
         except InvalidJsonException as e:
@@ -140,11 +141,12 @@ class InstanceTemplate(Resource):
             job_id = str(uuid.uuid4())
             thread = AsyncOperationThread(job_id, gcp_project, operation=update_instance_template, instance_template_params=template)
             thread.start()
-            add_job(job_id, template.name, 'Instance Template Update', 'PENDING')
+            add_job(job_id, template.name, 'Instance Template Update', 'PENDING', gcp_project.project_id)
             return {
                 'name': job_id,
                 'instance_template_name': template.name,
                 'type': 'Instance Template Update',
+                'project-id': gcp_project.project_id, 
                 'status': 'PENDING'
             }, 201
         except InvalidJsonException as e:

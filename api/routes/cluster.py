@@ -15,7 +15,7 @@ from shared.core.create_cluster import create_cluster
 from shared.core.update_cluster import update_cluster
 from shared.entities.cluster import ClusterUpdateType
 from flask_restx import Resource, Api, Namespace, fields
-from api.internal.cache import add_job
+from api.internal.jobs_controller import add_job
 from api.internal.threads import CreateClusterThread, UpdateClusterThread, MigrateClusterThread
 from api.internal.utils import admin_required
 
@@ -121,11 +121,12 @@ class ClusterList(Resource):
             job_id = str(uuid.uuid4())
             thread = CreateClusterThread(job_id, gcp_project, cluster, data)
             thread.start()
-            add_job(job_id, cluster.name, 'Cluster Creation', 'PENDING')
+            add_job(job_id, cluster.name, 'Cluster Creation', 'PENDING', gcp_project.project_id)
             return {
                 'name': job_id,
                 'cluster_name': cluster.name,
                 'type': 'Cluster Creation',
+                'project-id': gcp_project.project_id, 
                 'status': 'PENDING'
             }, 201
         except InvalidJsonException as e:
@@ -175,11 +176,12 @@ class Cluster(Resource):
             job_id = str(uuid.uuid4())
             thread = UpdateClusterThread(job_id, gcp_project, cluster, cluster_update_type)
             thread.start()
-            add_job(job_id, cluster.name, 'Cluster Update', 'PENDING')
+            add_job(job_id, cluster.name, 'Cluster Update', 'PENDING', gcp_project.project_id)
             return {
                 'name': job_id,
                 'cluster_name': cluster.name,
                 'type': 'Cluster Update',
+                'project-id': gcp_project.project_id, 
                 'status': 'PENDING'
             }, 201
         except InvalidJsonException as e:
@@ -226,11 +228,12 @@ class Cluster(Resource):
             job_id = str(uuid.uuid4())
             thread = MigrateClusterThread(job_id, gcp_project, cluster_name, cluster_region)
             thread.start()
-            add_job(job_id, cluster_name, 'Cluster Migrate', 'PENDING')
+            add_job(job_id, cluster_name, 'Cluster Migrate', 'PENDING', gcp_project.project_id)
             return {
                 'name': job_id,
                 'cluster_name': cluster_name,
                 'type': 'Cluster Migrate',
+                'project-id': gcp_project.project_id, 
                 'status': 'PENDING'
             }, 201
         except Exception as e:

@@ -3,6 +3,7 @@ from datetime import timedelta
 from couchbase.cluster import Cluster
 from couchbase.auth import PasswordAuthenticator, CertificateAuthenticator
 from couchbase.options import ClusterOptions, QueryOptions
+from couchbase.management.options import CreatePrimaryQueryIndexOptions
 import os 
 from loguru import logger
 
@@ -75,6 +76,20 @@ class CouchbaseCluster():
         # return the document
         document = collection.get(key)
         return document.content_as[dict]
+
+    def update(self, bucket, key, value):
+        """
+        Update a document in the database
+        """
+        # get the bucket
+        bucket = self.cluster.bucket(bucket)
+        # get the collection
+        collection = bucket.default_collection()
+        # update the document
+        collection.replace(key, value)
+        # return the document
+        document = collection.get(key)
+        return document.content_as[dict]
     
     def get(self, bucket, key):
         """
@@ -93,3 +108,39 @@ class CouchbaseCluster():
         document = collection.get(key)
 
         return document.content_as[dict]
+
+    def check(self, bucket, key):
+        """
+        Check if a document exists in the database
+        """
+        # get the bucket
+        bucket = self.cluster.bucket(bucket)
+        # get the collection
+        collection = bucket.default_collection()
+        # return the document
+        document = collection.get(key)
+
+        return document.success
+    
+    def list(self, bucket):
+        """
+        List the documents of a bucket.
+        """
+        # get the bucket
+        bucket = self.cluster.bucket(bucket)
+        # get the collection
+        collection = bucket.default_collection()
+
+        # create primary index and ignore if it exists
+        view_manager = bucket.view_indexes()
+        query_index_manager = self.cluster.query_indexes()
+        query_index_manager.create_primary_index(bucket.name, CreatePrimaryQueryIndexOptions(ignore_if_exists=True))
+
+        # create query options
+        options = QueryOptions()
+        # create query
+        query = 'SELECT * FROM `' + bucket.name + '`'
+        # execute query
+        result = self.cluster.query(query, options)
+        # return the result
+        return result.rows()
