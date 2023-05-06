@@ -113,7 +113,7 @@ class ClusterList(Resource):
 
             # create cluster
             job_id = str(uuid.uuid4())
-            thread = CreateClusterThread(job_id, gcp_project, cluster)
+            thread = CreateClusterThread(job_id, gcp_project, cluster, data)
             thread.start()
             add_job(job_id, cluster.name, 'Cluster Creation', 'PENDING')
             return {

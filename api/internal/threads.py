@@ -7,6 +7,7 @@ from shared.entities.cluster import ClusterUpdateType
 from utils.exceptions import InternalException
 from api.internal.cache import update_job_status
 from shared.lib.template import create_template, update_template
+from api.extensions import couchbase
 
 class AsyncOperationThread(threading.Thread): 
     def __init__(self, job_id, gcp_project, operation, **operation_params):
@@ -36,14 +37,17 @@ class AsyncOperationThread(threading.Thread):
 
 
 class CreateClusterThread(threading.Thread):
-    def __init__(self, job_id, gcp_project, cluster):
+    def __init__(self, job_id, gcp_project, cluster, cluster_json):
         threading.Thread.__init__(self)
         self.name = job_id
         self.gcp_project = gcp_project
         self.cluster = cluster
+        self.cluster_json = cluster_json
 
     def run(self):
         try:
+            res =couchbase.insert('clusters', self.cluster.name, self.cluster_json)
+            print(res)
             create_cluster(self.gcp_project, self.cluster)
             update_job_status(self.name, 'COMPLETED')
         except InternalException as e:
