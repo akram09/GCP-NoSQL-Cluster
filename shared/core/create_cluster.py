@@ -1,3 +1,4 @@
+# Description: This file contains the function to create a cluster
 import os 
 import uuid
 from loguru import logger
@@ -16,6 +17,19 @@ from shared.lib.images import get_image_from_family
 
 
 def create_cluster(project, cluster):
+    """
+    Perform all the necessary operations in order to create a GCP couchbase cluster. This includes the following steps:
+        - Check if the secret manager exists, if not create it
+        - Check if the encryption key exists, if not create it
+        - Check if the cloud storage bucket exists, if not create it
+        - Upload the scripts to the cloud storage bucket
+        - Check if the instance template exists, if not create it
+        - Check if the managed instance group exists, if not create it
+        - Check if the firewall rules exist, if not create them
+    Parameters:
+        project: The GCP project object 
+        cluster: The cluster parameters
+    """
     # checking secret manager
     logger.info("Checking secret manager ...")
     secret_name = setup_secret_manager(project, cluster, cluster.couchbase_params)
@@ -47,6 +61,9 @@ def create_cluster(project, cluster):
 
 
 def setup_managed_instance_group(project, cluster, template): 
+    """
+    Setup the managed instance group. If the managed instance group does not exist, create it. If it does exist, scale it to the desired size.
+    """
     logger.info(f"Checking if managed instance group {cluster.name} exists ...")
     mig = get_region_managed_instance_group(project, cluster.region, cluster.name)
     if mig is None: 
@@ -67,6 +84,9 @@ def setup_managed_instance_group(project, cluster, template):
 
 
 def setup_instance_template(project, cluster_params, template_params, storage_params, scripts_urls, encryption_key): 
+    """
+    Setup the instance template. If the instance template does not exist, create it. If it does exist, update it.
+    """
     #Get the machine image from the project and family
     machine_image = get_image_from_family(project, template_params.image_project, template_params.image_family)
 

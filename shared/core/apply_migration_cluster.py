@@ -1,3 +1,4 @@
+# Description: This file contains the functions to apply the migration to the cluster
 import uuid
 import os
 from loguru import logger
@@ -6,6 +7,15 @@ from utils.exceptions import GCPManagedInstanceGroupNotFoundException
 
 
 def apply_migration(project, cluster_name, cluster_region):
+    """
+    Apply the migration to the cluster. 
+    Parameters:
+        project: The project id
+        cluster_name: The name of the cluster
+        cluster_region: The region of the cluster
+    Returns: 
+        None
+    """
     # check managed instance group 
     logger.info(f"Checking if managed instance group {cluster_name} exists ...")
     mig = get_region_managed_instance_group(project, cluster_region, cluster_name)

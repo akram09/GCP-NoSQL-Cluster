@@ -1,3 +1,4 @@
+# Description: This file contains the functions to create, update, delete and list instance templates
 from loguru import logger
 from google.cloud import compute_v1
 from utils.shared import wait_for_extended_operation
@@ -165,6 +166,9 @@ def __update_template(
     shutdown_script_url: str,
     labels
     ) -> compute_v1.InstanceTemplate:
+    """
+    Update an instance template with the provided name and a specific instance configuration.
+    """
 
     logger.info(f"Updating instance template {template.name}...")
     logger.info(f"Because gcp doesn't support updating an instance template we will delete the first and create new one with updated values")

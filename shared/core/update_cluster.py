@@ -1,3 +1,4 @@
+# Description: This file contains the logic to update a cluster
 import uuid
 import os
 from loguru import logger
@@ -15,6 +16,20 @@ from utils.exceptions import GCPManagedInstanceGroupNotFoundException, GCPInstan
 
 
 def update_cluster(project, cluster, update_type: ClusterUpdateType):
+    """
+    Perform all the necessary operations in order to update a GCP couchbase cluster. This includes the following steps:
+        - Check if the secret manager exists, if not create it
+        - Check if the encryption key exists, if not create it
+        - Check if the cloud storage bucket exists, if not create it
+        - Upload the scripts to the cloud storage bucket
+        - Check if the instance template exists, if not create it
+        - Check if the managed instance group exists, if not create it
+        - Check if the firewall rules exist, if not create them
+    Parameters:
+        project: The GCP project object
+        cluster: The cluster parameters
+        update_type: The type of update to perform
+    """
     # check managed instance group 
     logger.info(f"Checking if managed instance group {cluster.name} exists ...")
     mig = get_region_managed_instance_group(project, cluster.region, cluster.name)
@@ -60,6 +75,9 @@ def update_cluster(project, cluster, update_type: ClusterUpdateType):
 
 
 def setup_instance_template(project, cluster_params, template_params, storage_params, scripts_urls, encryption_key): 
+    """
+    Setup the instance template for the cluster
+    """
     #Get the machine image from the project and family
     machine_image = get_image_from_family(project, template_params.image_project, template_params.image_family)
 
@@ -88,6 +106,9 @@ def setup_instance_template(project, cluster_params, template_params, storage_pa
 
 
 def update_mig(project, cluster, template, update_type: ClusterUpdateType):
+    """
+    Update the regional managed instance group
+    """
     logger.debug(f"Updating regional managed instance group {cluster.name}")
     mig = update_region_managed_instance_group(project, cluster.region, cluster.name, template) 
     logger.debug(f"Regional managed instance group {cluster.name} updated")

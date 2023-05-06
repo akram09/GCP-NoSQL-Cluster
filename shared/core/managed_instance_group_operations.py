@@ -1,3 +1,4 @@
+# Description: This file contains the functions to create, update and delete a managed instance group
 from shared.lib.template import get_instance_template
 from shared.lib.regional_managed_instance import update_region_managed_instance_group, create_region_managed_instance_group, get_region_managed_instance_group, delete_region_managed_instance_group, region_adding_instances, region_scaling_mig
 from loguru import logger
@@ -5,6 +6,9 @@ from utils.exceptions import GCPInstanceTemplateAlreadyExistsException, GCPInsta
 
 
 def create_managed_instance_group(gcp_project, managed_instance_group_params):
+    """
+    Create a managed instance group. It checks if the instance template exists and if the managed instance group already exists.
+    """
     # check if the instance template exists
     instance_template = get_instance_template(gcp_project, managed_instance_group_params['instance_template'])
     if not instance_template:
@@ -21,6 +25,9 @@ def create_managed_instance_group(gcp_project, managed_instance_group_params):
 
 
 def update_managed_instance_group(gcp_project, managed_instance_group_params):
+    """
+    Update a managed instance group. It checks if the instance template exists and if the managed instance group already exists.
+    """
     # check if the instance template exists
     instance_template = get_instance_template(gcp_project, managed_instance_group_params['instance_template'])
     if not instance_template:
@@ -37,6 +44,10 @@ def update_managed_instance_group(gcp_project, managed_instance_group_params):
 
 
 def delete_managed_instance_group(gcp_project, managed_instance_group_params):
+    """
+    Delete a managed instance group. It checks if the managed instance group already exists.
+    Raises an exception if the managed instance group does not exist.
+    """
     # check if the managed instance group already exists
     managed_instance_group = get_region_managed_instance_group(gcp_project, managed_instance_group_params['region'], managed_instance_group_params['name'])
     if not managed_instance_group:

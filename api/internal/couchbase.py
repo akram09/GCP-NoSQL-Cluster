@@ -1,3 +1,4 @@
+# Description: This module contains the CouchbaseCluster class which is an abstraction on top of the Couchbase Python SDK. This allows us to easily switch to another database in the future. The CouchbaseCluster class is used to connect to the Couchbase cluster and perform operations on the cluster.
 from datetime import timedelta
 from couchbase.cluster import Cluster
 from couchbase.auth import PasswordAuthenticator, CertificateAuthenticator
@@ -53,7 +54,18 @@ class CouchbaseCluster():
                 exit(1)
         # Wait until the cluster is ready for use.
         self.cluster.wait_until_ready(timedelta(seconds=5))
+
+
     def insert(self, bucket, key, value):
+        """
+        Insert a document into the database
+        Parameters:
+            bucket (str): The name of the bucket
+            key (str): The key of the document
+            value (dict): The value of the document
+        Returns:
+            dict: The document that was inserted
+        """
         # get the bucket
         bucket = self.cluster.bucket(bucket)
         # get the collection
@@ -65,6 +77,14 @@ class CouchbaseCluster():
         return document.content_as[dict]
     
     def get(self, bucket, key):
+        """
+        Get a document from the database
+        Parameters:
+            bucket (str): The name of the bucket
+            key (str): The key of the document
+        Returns:
+            dict: The document that was retrieved
+        """
         # get the bucket
         bucket = self.cluster.bucket(bucket)
         # get the collection

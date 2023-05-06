@@ -1,3 +1,4 @@
+# Description: API routes to create and delete GCP Storage Buckets
 import functools
 import uuid
 import threading
@@ -48,6 +49,9 @@ class BucketList(Resource):
     @api.response(500, 'Error creating the bucket')
     @admin_required
     def post(self):
+        """
+        API route to create a Bucket, it launches bucket creation operation in the background. The route returns a job to check the status of the operation
+        """
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params
@@ -88,6 +92,9 @@ class Bucket(Resource):
     @api.response(500, 'Error deleting the bucket')
     @admin_required
     def delete(self, bucket_name):
+        """
+        API route to delete a Bucket, it launches bucket deletion operation in the background. The route returns a job to check the status of the operation
+        """
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params

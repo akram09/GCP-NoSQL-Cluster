@@ -1,3 +1,6 @@
+""""
+Authentications related routes, such as login and register
+"""
 import functools
 import os
 import uuid
@@ -44,6 +47,10 @@ class AuthRegister(Resource):
     @api.response(400, 'Bad request')
     @api.response(500, 'Error registering the user')
     def post(self):
+        """
+        Register a new user, the route expects a json body that contains user informations. 
+        It returns a jwt token that can be used to authenticate the user in the future.
+        """
         # get the json data
         data = request.get_json()
         # check if the json data is valid
@@ -86,6 +93,10 @@ class AuthLogin(Resource):
     @api.response(400, 'Bad request')
     @api.response(500, 'Error logging in the user')
     def post(self):
+        """
+        Login a user, the route expects a json body that contains user informations. 
+        It returns a jwt token that can be used to authenticate the user in the future.
+        """
         # get the json data
         data = request.get_json()
         # check if the json data is valid
@@ -112,14 +123,18 @@ class AuthLogin(Resource):
 
 
 # oauth tokens
-@api.route('/oauth/tokens')
+@api.route('/oauth/tokens', doc=False)
 class OauthTokens(Resource):
-    # @api.doc('Update OAuth token', description="API route to update the Google Cloud Platform OAuth token that is used by this server to authenticate all the requests")
+    @api.doc('Update OAuth token', description="API route to update the Google Cloud Platform OAuth token that is used by this server to authenticate all the requests")
     @api.expect(oauth_token_update_request, validate=True)
     @api.response(200, 'Token Updated')
     @api.response(400, 'Bad request')
     @admin_required
     def post(self):
+        """
+        Update the Google Cloud Platform OAuth token that is used by this server to authenticate all the requests
+        """
+
         # get the json data
         data = request.get_json()
         # check if the json data is valid

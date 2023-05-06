@@ -1,3 +1,4 @@
+# Description: This file contains the functions to parse the arguments from the command line
 import argparse
 from loguru import logger
 from shared.entities.cluster import ClusterParams
@@ -8,6 +9,9 @@ from utils.yaml import parse_from_yaml
 
 # Parse arguments 
 def parse_args_from_cmdline():
+    """
+    Parse the arguments from the command line
+    """
     parser = argparse.ArgumentParser(description='Management of a couchbase cluster over Google Cloud Platform')
 
     # add a new subparser for the create cmd 
@@ -31,6 +35,9 @@ def parse_args_from_cmdline():
 
 # Add "create"  subcommand and arguments
 def add_create_cmd_args(subparsers):
+    """
+    Add the arguments for the create subcommand
+    """
     create_subparser = subparsers.add_parser('create', help='Create and deploy a couchbase cluster')
     
     create_subparser.add_argument('--project-id', dest='project_id', help='The id of GCP project, this argument can be also specified with the "GOOGLE_CLOUD_PROJECT" environment variable.')
@@ -73,6 +80,9 @@ def add_create_cmd_args(subparsers):
 
 # Add "update"  subcommand and arguments
 def add_update_cmd_args(subparsers):
+    """
+    Add the arguments for the update subcommand
+    """
     update_subparser = subparsers.add_parser('update', help='Update and deploy a couchbase cluster')
     
     update_subparser.add_argument('--project-id', dest='project_id', help='The id of GCP project, this argument can be also specified with the "GOOGLE_CLOUD_PROJECT" environment variable.')
@@ -116,6 +126,9 @@ def add_update_cmd_args(subparsers):
 
 # Add "server"  subcommand and arguments
 def add_server_cmd_args(subparsers):
+    """
+    Add the arguments for the server subcommand
+    """
     server_subparser = subparsers.add_parser('server', help='Launch a Flask web server')
    
 
@@ -137,11 +150,17 @@ def add_server_cmd_args(subparsers):
     server_subparser.set_defaults(command="server")
 
 def required_error_msg(arg, command):
+    """
+    Print the error message for a required argument
+    """
     command_msg = f'''usage: main.py {args.command} -h'''
     logger.error(f"{command_msg}\nmain.py: error: the following arguments are required: --{'-'.join(arg.split('_'))}")
 
 # Create cluster object from arguments
 def cluster_from_args(args: argparse.Namespace) -> ClusterParams:
+    """
+    Create a cluster object from the arguments
+    """
     if args.yaml_file != None:
         return parse_from_yaml(args.yaml_file)
     else:

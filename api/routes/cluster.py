@@ -1,3 +1,6 @@
+"""
+This module contains the API routes to create, update and delete clusters.
+"""
 import functools
 import uuid
 import threading
@@ -94,6 +97,9 @@ class ClusterList(Resource):
     @api.response(500, 'Error creating the cluster')
     @admin_required
     def post(self):
+        """
+        API route to create a cluster, it receives the cluster parameters in JSON format and launch the cluster creation operation in the background. The route returns a job to check the status of the operation.
+        """
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params
@@ -142,6 +148,9 @@ class Cluster(Resource):
     @api.response(500, 'Error updating the cluster')
     @admin_required
     def put(self, cluster_name):
+        """
+        API route to update a cluster, it receives the cluster parameters in JSON format and launch the cluster update operation in the background. The route returns a job to check the status of the operation, NOTE: The cluster update can either be in the rolling mode or no migration mode depending on the parameter `migrate`
+        """
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params
@@ -197,6 +206,9 @@ class Cluster(Resource):
     @api.response(500, 'Error updating the cluster')
     @admin_required
     def post(self, cluster_name):
+        """
+        API route to migrate the cluster to the last update created. It returns a job to check the status of the operation
+        """
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params

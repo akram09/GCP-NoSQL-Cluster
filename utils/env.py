@@ -1,3 +1,4 @@
+# Description: This file contains functions to load environment variables and check if they are set
 from loguru import logger
 from dotenv import load_dotenv
 import os 

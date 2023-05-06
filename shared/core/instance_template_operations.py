@@ -1,3 +1,4 @@
+# Description: This file contains the functions to create, update and delete instance templates
 from shared.lib.kms import setup_encryption_keys
 from shared.lib.template import create_template, get_instance_template, update_template, delete_template
 from loguru import logger
@@ -6,6 +7,9 @@ from shared.lib.images import get_image_from_family
 
 
 def create_instance_template(gcp_project, instance_template_params):
+    """
+    Create an instance template with the given parameters.
+    """
     # checking encyrption keys 
     logger.info(f"Checking encryption keys ....")
     encryption_key = setup_encryption_keys(gcp_project, instance_template_params.name, instance_template_params.region)
@@ -35,6 +39,9 @@ def create_instance_template(gcp_project, instance_template_params):
         raise GCPInstanceTemplateAlreadyExistsException(f"Instance template {instance_template_params.name} already exists")
 
 def update_instance_template(gcp_project, instance_template_params):
+    """
+    Update an instance template with the given parameters.
+    """
     # checking encyrption keys 
     logger.info(f"Checking encryption keys ....")
     encryption_key = setup_encryption_keys(gcp_project, instance_template_params.name, instance_template_params.region)
@@ -62,6 +69,9 @@ def update_instance_template(gcp_project, instance_template_params):
             instance_template_params.labels 
         )
 def delete_instance_template(gcp_project, instance_template_name):
+    """
+    Delete an instance template with the given parameters.
+    """
     logger.info(f"Deleting instance template {instance_template_name} ...")
     template = get_instance_template(gcp_project, instance_template_name)
     # check if there is a template existing

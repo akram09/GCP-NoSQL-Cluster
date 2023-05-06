@@ -1,3 +1,4 @@
+# Description: This file contains the functions to parse the cluster definition from a yaml file
 from loguru import logger
 import yaml
 from shared.entities.cluster import ClusterParams
@@ -7,6 +8,9 @@ from shared.entities.couchbase import CouchbaseParams
 
 # Parse cluster arguments from yaml file
 def parse_from_yaml(yaml_file: str):
+    """
+    Parse the cluster definition from a yaml file.
+    """
     logger.info(f"Reading cluster definition from {yaml_file}")
     # read the yaml file
     with open(yaml_file, 'r') as stream:

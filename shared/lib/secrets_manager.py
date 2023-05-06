@@ -1,3 +1,4 @@
+# Description: This file contains the functions to setup the secret manager for the cluster
 import os
 import google_crc32c
 from google.cloud import secretmanager
@@ -78,6 +79,9 @@ def create_secret_manager_client(project):
     return client
     
 def __assign_permissions_to_service_account(project, storage_params, region, key):
+    """
+    Assign permissions of objectViewer to the compute engine service account
+    """
 
     logger.info("Assigning read secrets role to the compute service account...") 
     # Add Compute Engine default service account to the bucket
@@ -97,6 +101,9 @@ def __assign_permissions_to_service_account(project, storage_params, region, key
 
 # check if the secret exists
 def __check_secret(client, project_id, secret_name):
+    """
+    Check if the secret exists.
+    """
     logger.info(f"Checking if {secret_name} exists...") 
     # get the secret name
     name = client.secret_path(project_id, secret_name)
@@ -112,6 +119,9 @@ def __check_secret(client, project_id, secret_name):
 
 # create the secret
 def __create_secret(client, project_id, secret_name):
+    """
+    Create the secret.
+    """
     logger.info(f"Creating secret {secret_name}...")
     # Build the parent resource name
     parent = f"projects/{project_id}"
@@ -130,6 +140,9 @@ def __create_secret(client, project_id, secret_name):
 
 # add the secret version
 def __add_latest_secret_version(client, project_id, secret_name, secret_value):
+    """
+    Add content to the secret and set it as the latest version.
+    """
 
     # Build the resource name
     parent = client.secret_path(project_id, secret_name)

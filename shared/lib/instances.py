@@ -1,3 +1,4 @@
+# Description: This file contains all the functions to the management of the instances.
 from loguru import logger
 import time 
 from google.cloud import compute_v1
@@ -10,6 +11,9 @@ from utils.exceptions import GCPInstanceSerialOutputException
 
 # public function
 def get_instance_serial_output(project, zone, instance_name):
+    """
+    Get the serial output from a running instance.
+    """
     # create client 
     client = create_intances_client(project)
 

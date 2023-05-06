@@ -1,3 +1,6 @@
+"""
+This file is used to initialize the flask app and register the blueprints, the api and the extensions.
+"""
 import os
 from flask import Flask, g, Blueprint
 from flask_restx import Api
@@ -38,6 +41,13 @@ api.add_namespace(storage_api)
 
 
 def create_app(test_config=None):
+    """
+    Create and configure an instance of the Flask application.
+    Parameters:
+        test_config: the configuration to use when testing the application. Default is None.
+    Returns:
+        app: the Flask application instance.
+    """
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     if test_config is None:
@@ -50,6 +60,7 @@ def create_app(test_config=None):
     # initialize extensions
     db.init_app(app)
     with app.app_context():
+        # create db tables if they don't exist yet
         db.create_all()
     bcrypt.init_app(app)
     couchbase.init_couchbase()

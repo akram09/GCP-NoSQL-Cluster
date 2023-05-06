@@ -1,3 +1,4 @@
+# Description: This file contains all the functions related to GCP storage operations
 from loguru import logger
 from google.cloud import storage
 import os
@@ -39,6 +40,9 @@ def setup_cloud_storage(project, storage_params, region, key):
     return bucket
 
 def upload_scripts(project, bucket, template_params, cluster_params, secret_name):
+    """
+    Upload the startup and shutdown scripts to the cloud storage bucket
+    """
     # create storage client 
     client = create_storage_client(project)
 

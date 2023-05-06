@@ -1,3 +1,4 @@
+# Description: Job routes for the API
 import functools
 import uuid
 import threading
@@ -45,6 +46,9 @@ class JobList(Resource):
     @api.response(500, 'Error getting the job list')
     @admin_required
     def get(self):
+        """
+        API route to get the list of jobs and their status. The `status` parameter can be used to filter the jobs by status. The `type` parameter can be used to filter the jobs by type. The `cluster_name` parameter can be used to filter the jobs by cluster name.
+        """
 
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
@@ -85,6 +89,9 @@ class Job(Resource):
     @api.response(404, 'Job not found')
     @api.response(500, 'Error getting the job')
     def get(self, job_id):
+        """
+        API route to get the status of a job. The `job_id` parameter is the id of the job to get the status.
+        """
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params

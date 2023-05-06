@@ -1,3 +1,5 @@
+# Purpose: User Model
+# Description: This file contains the User model. The User model is used to store user information in the database.
 from api.extensions import db, bcrypt
 from flask import current_app as app
 import datetime

@@ -1,3 +1,4 @@
+# Description: API routes for the managed instance group operations
 import functools
 import uuid
 import threading
@@ -53,6 +54,9 @@ class managedInstanceGroupList(Resource):
     @api.response(500, 'Error creating the managed instance group')
     @admin_required
     def post(self):
+        """
+        API route to create a Managed Instance Group, it receives the parameters in JSON format and launch the managed instance group creation operation in the background. The route returns a job to check the status of the operation
+        """
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params
@@ -112,6 +116,9 @@ class ManagedInstanceGroup(Resource):
     @api.response(500, 'Error updating the managed instance group')
     @admin_required
     def put(self, managed_instance_group_name):
+        """
+        API route to update a Managed Instance Group, it receives the parameters in JSON format and launch the managed instance group update operation in the background. The route returns a job to check the status of the operation
+        """
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params
@@ -169,6 +176,9 @@ class ManagedInstanceGroup(Resource):
     @api.response(500, 'Error deleting the managed instance group')
     @admin_required
     def delete(self, managed_instance_group_name):
+        """
+        API route to delete a Managed Instance Group, it receives the parameters in JSON format and launch the managed instance group deletion operation in the background. The route returns a job to check the status of the operation
+        """
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params

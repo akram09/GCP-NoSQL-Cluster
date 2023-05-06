@@ -1,3 +1,4 @@
+# Description: This file contains shared functions that interact with the GCP API and are used by multiple modules.
 import os
 import sys
 from typing import Any
@@ -9,6 +10,9 @@ from utils.exceptions import GCPOperationFailedException, UnAuthorizedException
 
 # Check parameters
 def check_gcp_params(args):
+    """
+    Check GCP parameters from command line arguments
+    """
     # check project id 
     if args.project_id is None:
         logger.info("Project ID not provided in command line arguments")
@@ -56,6 +60,9 @@ def check_gcp_params(args):
 
 # check gcp params from dict 
 def check_gcp_params_from_request(args):
+    """
+    Check GCP parameters from the request. 
+    """
     # check project id 
     if args["project-id"] is None:
         raise UnAuthorizedException("Project ID has not been provided")

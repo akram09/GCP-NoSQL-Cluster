@@ -1,3 +1,4 @@
+# Description: This file contains functions to parse the request body and the cluster definition from json.
 from loguru import logger
 import json
 from shared.entities.cluster import ClusterParams
@@ -8,6 +9,9 @@ from utils.exceptions import InvalidJsonException
 
 
 def parse_cluster_def_from_json(cluster_dict):
+    """
+    Parse the cluster definition from a json object. 
+    """
     logger.info(f"Reading cluster definition from Json dict")
       
     if 'storage' not in cluster_dict:
@@ -66,6 +70,9 @@ def parse_instance_template_from_json(instance_template_dict):
 
 
 def parse_instance_template(instance_template_dict, cluster_name):
+    """
+    Parse the instance template from a json object.
+    """
     if instance_template_dict == None and cluster_name == None:
         raise InvalidJsonException("Instance Template params not specified")
     # parse template values

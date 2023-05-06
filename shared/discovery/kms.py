@@ -1,3 +1,4 @@
+# Description: This file contains functions to create and manage encryption keys in Google Cloud KMS using the google discovery api.
 import os 
 import uuid
 from loguru import logger
@@ -12,6 +13,9 @@ from google.oauth2 import service_account
 
 
 def setup_encryption_keys(project, cluster_name, region):
+    """
+    Setup encryption keys for the cluster
+    """
 
     # build the kms service 
     kms_service = create_key_management_service(project)
@@ -34,6 +38,9 @@ def setup_encryption_keys(project, cluster_name, region):
 
 # create keyManagementServiceClient
 def create_key_management_service(project): 
+    """
+    Creates a key management service client
+    """
     # check if auth type is oauth  
     if project.auth_type == "oauth":
         # get the service token

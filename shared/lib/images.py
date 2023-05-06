@@ -1,3 +1,4 @@
+# Description: This file contains functions to interact with the google cloud platform
 import google.oauth2.credentials
 from loguru import logger
 from google.cloud import compute_v1
@@ -9,11 +10,17 @@ from utils.exceptions import GCPImageNotFoundException
 
 # public function
 def get_image_from_family(project, image_project, family):
+    """
+    Retrieve the newest image that is part of a given family in a project.
+    """
     client = create_images_client(project)
     return __get_image_from_family(client, image_project, family)
     
 
 def create_images_client(project): 
+    """
+    Create a compute images client.
+    """
     # check if auth type is oauth  
     if project.auth_type == "oauth": 
         # get the service token

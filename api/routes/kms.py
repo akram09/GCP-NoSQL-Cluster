@@ -1,3 +1,4 @@
+# Description: API routes for Key Management Service operations
 import functools
 import uuid
 import threading
@@ -55,6 +56,9 @@ class KeyRingList(Resource):
     @api.response(500, 'Error creating the key ring')
     @admin_required
     def post(self):
+        """
+        API route to create a Key Ring, it launches key ring creation operation in the background. The route returns a job to check the status of the operation
+        """
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params
@@ -98,6 +102,9 @@ class AsymetricKeyList(Resource):
     @api.response(500, 'Error creating the Asymetric Key')
     @admin_required
     def post(self):
+        """
+        API route to create an Asymetric Key, it launches Asymetric Key creation operation in the background. The route returns a job to check the status of the operation
+        """
         gcp_args = gcp_parser.parse_args()
         gcp_project = None
         # check gcp params

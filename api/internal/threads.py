@@ -1,3 +1,4 @@
+# Purpose: This module contains basic classes that works as an abstraction on the Python threading module. The purpose is to manage the threads in a more efficient way.
 from loguru import logger
 import threading 
 from shared.core.create_cluster import create_cluster

@@ -1,3 +1,4 @@
+# Description: Utility functions that are used in the application.
 from functools import wraps
 from flask import request
 from utils.exceptions import UnAuthorizedException, InternalException

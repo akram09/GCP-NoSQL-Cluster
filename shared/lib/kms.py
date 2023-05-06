@@ -1,3 +1,4 @@
+# Description: This file contains functions to create and manage encryption keys in Google Cloud KMS
 import os 
 import uuid
 from loguru import logger
@@ -11,6 +12,9 @@ from utils.exceptions import GCPKMSKeyCreationFailedException, GCPKMSKeyRingCrea
 
 
 def setup_encryption_keys(project, cluster_name, region):
+    """
+    Setup encryption keys for the cluster. This involves creating a key ring and a symmetric encryption/decryption key .
+    """
 
     # create secret manager client
     client = create_key_management_service_client(project)

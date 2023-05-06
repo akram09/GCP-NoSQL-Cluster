@@ -1,3 +1,6 @@
+"""
+This module represents the default configuration of the flask application.
+"""
 import os
 import base64
 basedir = os.path.abspath(os.path.dirname(__file__))

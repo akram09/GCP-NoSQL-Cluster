@@ -1,3 +1,4 @@
+# Description: This file contains the functions to create a firewall rule for the couchbase servers.
 import sys
 from loguru import logger
 from typing import Any
@@ -10,6 +11,9 @@ from utils.shared import wait_for_extended_operation
 
 
 def setup_firewall(project, cluster_name):
+    """
+    Creates a firewall rule to allow the couchbase servers to communicate with each other.
+    """
     # create client 
     client = create_firewalls_client(project)
 
