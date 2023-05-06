@@ -1,11 +1,15 @@
 # GCP NoSQL cluster creation
-Python script for automating the creation of a nosql cluster on GCP
+Python script for automating the creation of a nosql cluster on GCP. 
 
 ## Features
 - Creation of stateful managed instance group from created template.
 - Running with command line arguments allows users to pass input to the script and modify its behavior at runtime through the use of arguments and options.
-- Start-up scripts for most of linux distributions.
 - Using Google Cloud Storage to store start-up script.
+- Start-up scripts for the created managed virtual machine instances. 
+- `server` command to bring up a rest api server that exposes all the core commands. 
+- `Regional` Managed instance Group. 
+- `REST API` server support running the operations in a multi-threading way. 
+- `REST API` server with `swagger` documentation
 
 ...
 
@@ -15,30 +19,83 @@ Built on Python: 3.10.8
 
 
 ## File Structure 
-\# Todo: needs update
 ```
 .
-├── bin
-    ├── startuo-script-debian.sh
-    ├── startuo-script-rhel.sh
-    └── startuo-script-suse.sh
-├── cluster
-    └── cluster.py
-├── lib
-    ├── managed_instance.py
-    ├── storage.py
-    ├── template.py
-    └── vm_instance.py
-├── utils
+├── api
+│   ├── config.py
+│   ├── extensions.py
+│   ├── __init__.py
+│   ├── internal
+│   │   ├── cache.py
+│   │   ├── couchbase.py
+│   │   ├── threads.py
+│   │   └── utils.py
+│   ├── models
+│   │   └── user.py
+│   └── routes
+│       ├── auth.py
+│       ├── cluster.py
+│       ├── job.py
+│       ├── kms.py
+│       ├── managed_instance.py
+│       ├── storage.py
+│       └── template.py
+├── cmd
+│   ├── create_cmd.py
+│   ├── __init__.py
+│   ├── server_cmd.py
+│   └── update_cmd.py
+├── example.env
+├── main.py
+├── README.md
+├── requirements.txt
+├── shared
+│   ├── bin
+│   │   ├── shutdown-scripts
+│   │   │   ├── shutdown-script-debian.j2
+│   │   │   ├── shutdown-script-rhel.j2
+│   │   │   └── shutdown-script-suse.j2
+│   │   └── startup-scripts
+│   │       ├── startup-script-debian.j2
+│   │       ├── startup-script-rhel.j2
+│   │       └── startup-script-suse.j2
+│   ├── core
+│   │   ├── apply_migration_cluster.py
+│   │   ├── create_cluster.py
+│   │   ├── instance_template_operations.py
+│   │   ├── kms_operations.py
+│   │   ├── managed_instance_group_operations.py
+│   │   ├── storage_operations.py
+│   │   └── update_cluster.py
+│   ├── discovery
+│   │   ├── kms.py
+│   │   └── secrets_manager.py
+│   ├── entities
+│   │   ├── cluster.py
+│   │   ├── couchbase.py
+│   │   ├── gcp_project.py
+│   │   ├── storage.py
+│   │   └── template.py
+│   └── lib
+│       ├── disks.py
+│       ├── firewall.py
+│       ├── images.py
+│       ├── instances.py
+│       ├── kms.py
+│       ├── regional_managed_instance.py
+│       ├── secrets_manager.py
+│       ├── storage.py
+│       └── template.py
+├── template.yaml
+├── update-template.yaml
+└── utils
     ├── args.py
     ├── env.py
-    └── gcp.py
-├── .gitignore
-├── main.py
-├── requirements.txt
-├── .env
-├── template.json
-└── service.json
+    ├── exceptions.py
+    ├── __init__.py
+    ├── parse_requests.py
+    ├── shared.py
+    └── yaml.py
 ```
 
 ## Installation and usage
@@ -64,26 +121,41 @@ pip install -r requirements.txt
 ```bash
 cp example.env .env 
 ```
-
-- Put there the necessary info
+- Set the environment variables:
+```
+SERVICE_ACCOUNT_OAUTH_TOKEN=
+COUCHBASE_USER=
+COUCHBASE_PASSWORD=
+```
+or 
+```
+COUCHBASE_CERT_PATH=
+```
 
 - Run main.py
-1) passing cluster arguments with command line, for example: 
-```bash
-python main.py --cluster-name mig-2 --cluster-size 4 --machine-type e2-micro --image-project debian-cloud --image-family debian-11 --disk-type pd-standard --disk-size 10
-```
-2) passing cluster arguments with yaml file, Here's a `template.yaml`:
-```yaml
-cluster_name: mig-4
-cluster_size: 4
-image_project: debian-cloud
-image_family: debian-11
-machine_type: e2-micro
-disk_type: pd-standard
-disk_size: 10
-bucket: bucket-7972cfbe-3da3-4f7f-a1fa-770a13c853eb 
-```
+1) Using the `create` command in order to create a cluster 
+  a)  passing cluster arguments with command line, for example: 
+    ```bash
+      python main.py create --cluster-name mig-2 --cluster-size 4 --machine-type e2-micro --image-project debian-cloud --image-family debian-11 --disk-type pd-standard --disk-size 10
+    ```
 
-```bash
-python main.py --yaml-file template.yaml
-```
+  b) passing cluster arguments with yaml file:
+  ```bash
+    python main.py create --yaml-file template.yaml
+  ```
+
+2) Using the `update` command in order to update a cluster 
+  a)  passing cluster arguments with command line, for example: 
+    ```bash
+      python main.py update --cluster-name mig-2 --cluster-size 4 --machine-type e2-micro --image-project debian-cloud --image-family debian-11 --disk-type pd-standard --disk-size 10
+    ```
+
+  b) passing cluster arguments with yaml file:
+  ```bash
+    python main.py update --yaml-file template.yaml
+  ```
+
+3) Using the `server` command in order to start the REST API that exposes routes to perform lifecycle management operations. 
+  ```bash
+  python main.py server
+  ```
