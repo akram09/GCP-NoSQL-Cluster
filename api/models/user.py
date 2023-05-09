@@ -1,26 +1,31 @@
 # Purpose: User Model
 # Description: This file contains the User model. The User model is used to store user information in the database.
-from api.extensions import db, bcrypt
+from api.extensions import bcrypt
 from flask import current_app as app
 import datetime
 from loguru import logger
 import jwt
+import uuid
 
-class User(db.Model):
-    # auto generate id
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(50), nullable=False)
-    registered_on = db.Column(db.DateTime, nullable=False)
-    role = db.Column(db.String(50), nullable=False, default='user')
-
+class User():
     def __init__(self, username, password, role="user"):
+        # generate id 
+        self.id = str(uuid.uuid4())  
         self.username = username
         self.password = bcrypt.generate_password_hash(
             password, app.config.get('BCRYPT_LOG_ROUNDS')
         ).decode()
         self.registered_on = datetime.datetime.now()
         self.role = role
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "password": self.password,
+            "registered_on": self.registered_on,
+            "role": self.role
+        }
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password, password)

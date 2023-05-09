@@ -6,6 +6,7 @@ from shared.entities.storage import GCPStorageParams
 from shared.entities.template import TemplateParams
 from shared.entities.couchbase import CouchbaseParams
 from utils.yaml import parse_from_yaml
+from utils.exceptions import ArgsParsingException
 
 # Parse arguments 
 def parse_args_from_cmdline():
@@ -167,16 +168,16 @@ def cluster_from_args(args: argparse.Namespace) -> ClusterParams:
         logger.info("Creating cluster from arguments")
         if args.cluster_name == None:
             required_error_msg("cluster_name", args.command)
-            exit(0)
+            raise ValueError("Cluster name is required")
         if args.cluster_size == None:
             required_error_msg("cluster_size", args.command)
-            exit(0)
+            raise ValueError("Cluster size is required")
         if args.region == None:
             required_error_msg("region", args.command)
-            exit(0)
+            raise ValueError("Region is required")
         if args.bucket == None:
             required_error_msg("bucket", args.command)
-            exit(0)        
+            raise ValueError("Bucket is required")
         cluster = ClusterParams(args.cluster_name, args.cluster_size, agrs.region)
 
         storage = Storage(args.bucket)

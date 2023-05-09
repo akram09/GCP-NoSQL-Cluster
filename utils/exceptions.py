@@ -10,7 +10,12 @@ class InternalException(Exception):
             self.message = message
         else:
             self.message = "An internal error occurred."
+class YamlParsingException(InternalException):
+    pass
 
+
+class ArgsParsingException(InternalException):
+    pass
 
 class GCPSecretNotFoundException(InternalException):
     pass
@@ -66,4 +71,17 @@ class InvalidOAUTHTokenException(InternalException):
     pass
 
 class GCPManagedInstanceGroupAlreadyExistsException(InternalException):
+    pass
+
+class ProjectIdNotProvidedException(InternalException):
+    pass
+
+
+class UserAlreadyExistsException(InternalException):
+    pass
+
+class UserDoesNotExistException(InternalException):
+    pass
+
+class InvalidPasswordException(InternalException):
     pass

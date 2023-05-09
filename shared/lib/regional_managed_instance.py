@@ -307,7 +307,6 @@ def __apply_updates_to_instances(instance_group_manager_client, project, region,
             )
             # use regex to get startup-script-url status code 
             status_code = re.findall(r"startup-script-url exit status (\d+)", output)
-            print(status_code)
             if len(status_code) >= 1:
                 break
         if status_code[-1] != '0':

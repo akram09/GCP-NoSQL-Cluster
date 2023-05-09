@@ -5,6 +5,7 @@ from shared.entities.cluster import ClusterParams
 from shared.entities.storage import GCPStorageParams
 from shared.entities.template import TemplateParams
 from shared.entities.couchbase import CouchbaseParams
+from utils.exceptions import YamlParsingException
 
 # Parse cluster arguments from yaml file
 def parse_from_yaml(yaml_file: str):
@@ -18,31 +19,31 @@ def parse_from_yaml(yaml_file: str):
             data = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
             logger.error(exc)
-            exit(1)
+            raise YamlParsingException("Error while parsing the yaml file")
 
     if 'cluster' not in data:
         logger.error("Yaml file not well formatted, please follow the standard format")
-        exit(0)
+        raise YamlParsingException("Error while parsing the yaml file")
     
     if 'storage' not in data['cluster']:
         logger.error("Storage bucket is missing from the yaml file")
-        exit(0)
+        raise YamlParsingException("Error while parsing the yaml file")
 
     # Parse cluster important params
             
     # verify if the yaml file has attributes: cluster_name, cluster_size, bucket
     if data['cluster']['name'] == None:
         logger.error("Cluster name is missing from the yaml file")
-        exit(0)
+        raise YamlParsingException("Cluster name is missing from the yaml file")
     if data['cluster']['size'] == None:
         logger.error("Cluster size is missing from the yaml file")
-        exit(0)
+        raise YamlParsingException("Cluster size is missing from the yaml file")
     if data['cluster']['region'] == None:
         logger.error("Cluster region is missing from the yaml file")
-        exit(0)
+        raise YamlParsingException("Cluster region is missing from the yaml file")
     if data['cluster']['storage']['bucket'] == None:
         logger.error("Bucket is missing from the yaml file")
-        exit(0)
+        raise YamlParsingException("Bucket is missing from the yaml file")
    
     # creat a cluster object from the properties
     cluster_name = data['cluster']['name']

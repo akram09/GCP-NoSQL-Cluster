@@ -6,6 +6,8 @@ from google.cloud import kms
 import google.oauth2.credentials
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
+from utils.exceptions import GCPKMSKeyCreationFailedException, GCPKMSKeyRingCreationFailedException, GCPKMSKeyPermissionAssignmentFailedException
+
 
 
 
@@ -86,7 +88,7 @@ def __create_key_ring(service, project_id, location_id, key_ring_id):
     except Exception as e:
         logger.error(f"Error creating key ring {key_ring_id} in project {project_id}")
         logger.error(e)
-        exit(1)
+        raise GCPKMSKeyRingCreationFailedException(f"Error creating key ring {key_ring_id} in project {project_id}")
 
 
 # get key ring 
@@ -142,7 +144,7 @@ def __create_key_symmetric_encrypt_decrypt(service, project_id, location_id, key
     except Exception as e:
         logger.error(f"Error creating key {key_id} in key ring {key_ring_id} in project {project_id}")
         logger.error(e)
-        exit(1)
+        raise GCPKMSKeyCreationFailedException(f"Error creating key {key_id} in key ring {key_ring_id} in project {project_id}")
 
 
 def __assign_permission_to_storage(service, project_id, key_ring_id, key_id, location):

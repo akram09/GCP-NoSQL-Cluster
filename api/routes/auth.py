@@ -11,13 +11,12 @@ from flask import (
 from utils.parse_requests import parse_cluster_def_from_json
 from loguru import logger
 from utils.shared import check_gcp_params_from_request
-from utils.exceptions import InvalidJsonException, UnAuthorizedException, UserWithUsernameAlreadyExistsException
+from utils.exceptions import InvalidJsonException, UnAuthorizedException, UserWithUsernameAlreadyExistsException, UserAlreadyExistsException, UserDoesNotExistException, InvalidPasswordException
 from utils.env import update_service_account_oauth_token
 from flask_restx import Resource, Api, Namespace, fields
-from api.extensions import db
 from api.models.user import User
-from sqlalchemy.exc import IntegrityError
 from api.internal.utils import admin_required
+from api.internal.auth_controller import register_user, login_user
 # create auth namespace
 api = Namespace('auth', description='Authentications related operations')
 
@@ -58,27 +57,22 @@ class AuthRegister(Resource):
             raise InvalidJsonException()
         # create a new user
         user = User(
-            username=data['username'],
-            password=data['password'],
-            role=data['role']
+            data['username'],
+            data['password'],
+            data['role']
         )
-        # add the user to the database
-        db.session.add(user)
         try: 
-            db.session.commit()
-            # generate jwt token 
-            token = user.encode_auth_token(user.id, user.role)
+            token = register_user(user)
             return {
                 "message": "User registered",
                 "token": token
             }, 200
-        # catch integrity error
-        except IntegrityError:
+        except UserAlreadyExistsException as e:
+            logger.error(e)
             return {
-                "message": "User with username already exists"
+                "message": "User already exists"
             }, 400
         except Exception as e:
-            raise e
             logger.error(e)
             return {
                 "message": "Error registering the user"
@@ -102,20 +96,24 @@ class AuthLogin(Resource):
         # check if the json data is valid
         if not data:
             raise InvalidJsonException()
-        # get the user
-        user = User.query.filter_by(username=data['username']).first()
-        # check if the user exists
-        if not user:
+        try:
+            token = login_user(data['username'], data['password'])
+        except UserDoesNotExistException as e:
+            logger.error(e)
             return {
                 "message": "User does not exist"
             }, 400
-        # check if the password is correct
-        if not user.check_password(data['password']):
+        except InvalidPasswordException as e:
+            logger.error(e)
             return {
                 "message": "Incorrect password"
             }, 400
+        except Exception as e:
+            logger.error(e)
+            return {
+                "message": "Error logging in the user"
+            }, 500
         # generate jwt token
-        token = user.encode_auth_token(user.id, user.role)
         return {
             "message": "User logged in",
             "token": token

@@ -12,7 +12,7 @@ from api.routes.managed_instance import api as managed_instance_api
 from api.routes.kms import api as kms_api
 from api.routes.storage import api as storage_api
 from api.config import Config
-from api.extensions import db, bcrypt, couchbase
+from api.extensions import  bcrypt, couchbase
 
 
 # create the api blueprint 
@@ -58,10 +58,6 @@ def create_app(test_config=None):
         app.config.from_mapping(test_config)
    
     # initialize extensions
-    db.init_app(app)
-    with app.app_context():
-        # create db tables if they don't exist yet
-        db.create_all()
     bcrypt.init_app(app)
     couchbase.init_couchbase()
     # register the cluster blueprint

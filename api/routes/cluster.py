@@ -111,7 +111,9 @@ class ClusterList(Resource):
                 "error": e.message
             }, 401
         # receive json data from the request
+
         data = request.get_json()
+        data['project-id'] = gcp_project.project_id
         logger.info("Parsing parameters ...")
         try:
             cluster = parse_cluster_def_from_json(data)

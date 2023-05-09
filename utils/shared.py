@@ -6,7 +6,7 @@ from loguru import logger
 from utils.env import get_env_project_id, check_application_credentials, check_compute_engine_service_account_email, check_storage_service_account_email, check_service_account_oauth_token
 from shared.entities.gcp_project import GCPProject
 from google.api_core.extended_operation import ExtendedOperation
-from utils.exceptions import GCPOperationFailedException, UnAuthorizedException
+from utils.exceptions import GCPOperationFailedException, UnAuthorizedException, ProjectIdNotProvidedException
 
 # Check parameters
 def check_gcp_params(args):
@@ -21,20 +21,21 @@ def check_gcp_params(args):
             args.project_id = get_env_project_id()
         except Exception as e:
             logger.error(e)
-            exit(1)
+            raise ProjectIdNotProvidedException("Project ID not provided in command line arguments or environment variables")
+
     # check compute service account 
     try:
         check_compute_engine_service_account_email()
     except Exception as e:
         logger.error(e)
-        exit(1)
+        raise UnAuthorizedException("Compute service account email not found")
 
     # check storage service account
     try:
         check_storage_service_account_email()
     except Exception as e:
         logger.error(e)
-        exit(1)
+        raise UnAuthorizedException("Storage service account email not found")
 
     # check authentication 
     if args.authentication_type == "service-account":
@@ -45,7 +46,7 @@ def check_gcp_params(args):
             return GCPProject(args.project_id, auth_type="service-account")
         except Exception as e:
             logger.error(e)
-            exit(1)
+            raise UnAuthorizedException("Service account credentials not found")
     elif args.authentication_type == "oauth":
         logger.info("Authentication type set to use oauth")
         logger.info("Checking environment variable")
@@ -54,7 +55,7 @@ def check_gcp_params(args):
             return GCPProject(args.project_id, auth_type="oauth", service_token=os.environ.get("SERVICE_ACCOUNT_OAUTH_TOKEN"))
         except Exception as e:
             logger.error(e)
-            exit(1)
+            raise UnAuthorizedException("Oauth token not found")
 
 
 

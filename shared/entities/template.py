@@ -25,7 +25,7 @@ class TemplateParams:
             
         else:
             logger.error("Template Disks must be a list")
-            exit(0)
+            raise Exception("Template Disks must be a list")
         # check if disks contains only one main disk
         
     

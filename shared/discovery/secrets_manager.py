@@ -6,6 +6,7 @@ from loguru import logger
 import google.oauth2.credentials
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
+from utils.exceptions import GCPSecretNotFoundException, GCPSecretCreationFailedException, GCPSecretVersionCreationFailedException
 
 
 
@@ -32,7 +33,7 @@ def setup_secret_manager(project, cluster, couchbase_params):
         secret = __check_secret(secrets_manager_service, project.project_id, secret_name)
         if secret is None:
             logger.info("Couchbase secret don't exists ")
-            exit(1)
+            raise GCPSecretNotFoundException(f"Secret {secret_name} not found")
         else:
             logger.info("Couchbase secret already exists")
             logger.info(f"The cluster will use the 'latest' version of secret {secret}")
@@ -128,13 +129,13 @@ def __create_secret(service, project_id, secret_name):
         # check the response 
         if response is None:
             logger.error(f"Secret {secret_name} creation failed.")
-            exit(1)
+            raise GCPSecretCreationFailedException(f"Error creating secret {secret_name}.")
         else:
             logger.success(f"Secret {secret_name} created successfully.")
     except Exception as e:
         logger.error(f"Secret {secret_name} creation failed.")
         logger.error(e)
-        exit(1)
+        raise GCPSecretCreationFailedException(f"Error creating secret {secret_name}.")
 
 
 
@@ -161,12 +162,12 @@ def __add_latest_secret_version(service, project_id, secret_name, secret_value):
         # print version 
         if response is None:
             logger.error(f"Secret {secret_name} version creation failed.")
-            exit(1)
+            raise GCPSecretVersionCreationFailedException(f"Error adding secret version for {secret_name}.")
         else:
             logger.success(f"Secret {secret_name} version created successfully.")
             return response
     except Exception as e:
         logger.error(f"Secret {secret_name} version creation failed.")
         logger.error(e)
-        exit(1)
+        raise GCPSecretVersionCreationFailedException(f"Error adding secret version for {secret_name}.")
 
