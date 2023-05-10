@@ -16,7 +16,7 @@ from shared.core.update_cluster import update_cluster
 from shared.entities.cluster import ClusterUpdateType
 from flask_restx import Resource, Api, Namespace, fields
 from api.internal.jobs_controller import add_job
-from api.internal.threads import CreateClusterThread, UpdateClusterThread, MigrateClusterThread
+from api.internal.threads import CreateClusterThread, UpdateClusterThread, MigrateClusterThread, DeleteClusterThread
 from api.internal.utils import admin_required
 
 
@@ -83,6 +83,11 @@ auth_token_parser.add_argument('Authorization', location='headers', required=Tru
 # cluster update query parameters parser 
 cluster_update_parser = api.parser()
 cluster_update_parser.add_argument('migrate', location='args', type=int, help='Whether to migrate the cluster (0/1)', default=0)
+
+
+# cluster delete query parameters parser
+cluster_delete_parser = api.parser()
+cluster_delete_parser.add_argument('region', location='args', required=True, help='The region of the cluster to delete')
 
 
 
@@ -166,6 +171,7 @@ class Cluster(Resource):
             }, 401
         # receive json data from the request
         data = request.get_json()
+        data['project-id'] = gcp_project.project_id
 
         logger.info("Parsing parameters ...")
         try:
@@ -176,7 +182,7 @@ class Cluster(Resource):
 
             # update cluster
             job_id = str(uuid.uuid4())
-            thread = UpdateClusterThread(job_id, gcp_project, cluster, cluster_update_type)
+            thread = UpdateClusterThread(job_id, gcp_project, cluster, cluster_update_type, data)
             thread.start()
             add_job(job_id, cluster.name, 'Cluster Update', 'PENDING', gcp_project.project_id)
             return {
@@ -193,6 +199,42 @@ class Cluster(Resource):
             logger.error(f"Error updating the cluster: {e}")
             return {'error': "Error updating the cluster"}, 500
 
+    # delete a cluster Resource
+    @api.doc('delete_cluster', description="API route to delete a cluster. The route returns a job to check the status of the operation")
+    @api.expect(gcp_parser, auth_token_parser,cluster_delete_parser, validate=True)
+    @api.response(201, 'Cluster deleted')
+    @api.response(401, 'Unauthorized request')
+    @api.response(500, 'Error deleting the cluster')
+    @admin_required
+    def delete(self, cluster_name):
+        """
+        API route to delete a cluster. The route returns a job to check the status of the operation
+        """
+        gcp_args = gcp_parser.parse_args()
+        gcp_project = None
+        # check gcp params
+        try:
+            gcp_project = check_gcp_params_from_request(gcp_args)
+        except InternalException as e:
+            logger.error(f"Error checking gcp params: {e}")
+            return {
+                "error": e.message
+            }, 401
+
+        # get region from args
+        region = cluster_delete_parser.parse_args()['region']
+        # delete cluster
+        job_id = str(uuid.uuid4())
+        thread = DeleteClusterThread(job_id, gcp_project, cluster_name, region)
+        thread.start()
+        add_job(job_id, cluster_name, 'Cluster Deletion', 'PENDING', gcp_project.project_id)
+        return {
+            'name': job_id,
+            'cluster_name': cluster_name,
+            'type': 'Cluster Deletion',
+            'project-id': gcp_project.project_id, 
+            'status': 'PENDING'
+        }, 201
 
 
 

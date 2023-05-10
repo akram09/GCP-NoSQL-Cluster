@@ -10,24 +10,26 @@ def register_user(user: User):
     # insert user to the couchbase database
     user_dict = user.to_dict()
     # check if the user already exists 
-    if couchbase.check("users", user.username):
+    users = couchbase.list_filter("users", username=user_dict["username"])
+    if len(list(users)) > 0:
         raise UserAlreadyExistsException("User already exists")
-    couchbase.insert("users", user_dict["username"], user_dict)
-    return user.encode_auth_token(user_dict["username"], user_dict["role"])
+    couchbase.insert("users", user_dict["id"], user_dict)
+    return user.encode_auth_token(user_dict["id"], user_dict["role"])
 
 def login_user(username, password):
     """
     Controller function to login a user and generate the jwt token for access.
     """
     # check if the user exists 
-    if not couchbase.check("users", username):
+    users = list(couchbase.list_filter("users", username=username))
+    if len(users) == 0:
         raise UserDoesNotExistException("User does not exist")
-    # get the user from the database
-    user_dict = couchbase.get("users", username)
+    user_dict = users[0]["users"]
+    user = User.from_dict(user_dict)
     # check if the password is correct
     if not user.check_password(user_dict["password"]):
         raise InvalidPasswordException("Incorrect password")
     # generate jwt token
-    return user.encode_auth_token(user_dict["username"], user_dict["role"])
+    return user.encode_auth_token(user_dict["id"], user_dict["role"])
 
 

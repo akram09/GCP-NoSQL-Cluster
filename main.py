@@ -25,12 +25,35 @@ from utils.env import load_environment_variables
 from cmd.create_cmd import create_cluster
 from cmd.update_cmd import update_cluster
 from cmd.server_cmd import start_server
+from loguru import logger
+import sys
+
+
+
+def formatter(record):
+    # check if the record has extra data 
+    if "job_id" in record["extra"]:
+        extra_text = " [job_id="+ record["extra"]["job_id"] + "]"
+        logging_format = "<magenta>"+ extra_text +  "</magenta> | <green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>\n"
+    else:
+        logging_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>\n"
+    return logging_format 
+
+def configure_logger():
+    # configure logging format
+    logger.remove()
+    logger.add(sink=sys.stdout, format=formatter, level="INFO")
+
 
 def main():
     # init environment 
     load_environment_variables()
+    # configure logger
+    configure_logger()
+
     # parse application args  
     arguments = parse_args_from_cmdline()
+
     if arguments.command == "create":
         create_cluster(arguments)
     elif arguments.command == "update":

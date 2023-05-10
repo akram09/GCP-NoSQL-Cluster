@@ -117,10 +117,14 @@ class CouchbaseCluster():
         bucket = self.cluster.bucket(bucket)
         # get the collection
         collection = bucket.default_collection()
-        # return the document
-        document = collection.get(key)
+        # check if the document exists
+        query = 'SELECT * FROM `' + bucket.name + '` WHERE META().id = $1'
+        options = QueryOptions(positional_parameters=[key])
+        result = self.cluster.query(query, options)
+        # return the result
+        return len(list(result.rows())) > 0
 
-        return document.success
+
     
     def list(self, bucket):
         """
@@ -137,10 +141,45 @@ class CouchbaseCluster():
         query_index_manager.create_primary_index(bucket.name, CreatePrimaryQueryIndexOptions(ignore_if_exists=True))
 
         # create query options
-        options = QueryOptions()
+        options = QueryOptions(positional_parameters=[bucket.name])
         # create query
         query = 'SELECT * FROM `' + bucket.name + '`'
         # execute query
         result = self.cluster.query(query, options)
         # return the result
         return result.rows()
+
+    def list_filter(self, bucket, **kwargs):
+        """
+        List the documents of a bucket with filters.
+        """
+        # get the bucket
+        bucket = self.cluster.bucket(bucket)
+        # get the collection
+        collection = bucket.default_collection()
+
+        # create primary index and ignore if it exists
+        view_manager = bucket.view_indexes()
+        query_index_manager = self.cluster.query_indexes()
+        query_index_manager.create_primary_index(bucket.name, CreatePrimaryQueryIndexOptions(ignore_if_exists=True))
+
+        # create query
+        query = 'SELECT * FROM `' + bucket.name + '` WHERE '
+        #
+        params = []
+        # add filters to query
+        for key, value in kwargs.items():
+            query += key + ' = $' + str(len(params) + 1) + ' AND '
+            params.append(value) 
+        # remove last AND
+        query = query[:-5]
+        # create query options
+        options = QueryOptions(positional_parameters=params)
+        # execute query
+        result = self.cluster.query(query, options)
+        return result.rows()
+
+
+
+
+

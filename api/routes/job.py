@@ -42,7 +42,7 @@ class JobList(Resource):
     
     # get job list route
     @api.doc('get_job_list', description="API route to get the list of jobs and their status. The `status` parameter can be used to filter the jobs by status. The `type` parameter can be used to filter the jobs by type. The `cluster_name` parameter can be used to filter the jobs by cluster name.")
-    @api.expect(gcp_parser, job_list_parser, auth_token_parser, validate=True)
+    @api.expect(job_list_parser, auth_token_parser, validate=True)
     @api.response(200, 'Job list found')
     @api.response(401, 'Unauthorized request')
     @api.response(500, 'Error getting the job list')
@@ -51,18 +51,6 @@ class JobList(Resource):
         """
         API route to get the list of jobs and their status. The `status` parameter can be used to filter the jobs by status. The `type` parameter can be used to filter the jobs by type. The `cluster_name` parameter can be used to filter the jobs by cluster name.
         """
-
-        gcp_args = gcp_parser.parse_args()
-        gcp_project = None
-        # check gcp params
-        try:
-            gcp_project = check_gcp_params_from_request(gcp_args)
-        except InternalException as e:
-            logger.error(f"Error checking gcp params: {e}")
-            return {
-                "error": e.message
-            }, 401
-
         jobs_list = get_job_list()
         args = job_list_parser.parse_args()
         status = args.get('status')
@@ -89,28 +77,20 @@ class Job(Resource):
 
     # get job route, check in the current threads 
     @api.doc('get_job')
-    @api.expect(gcp_parser, auth_token_parser, validate=True)
+    @api.expect(auth_token_parser, validate=True)
     @api.response(200, 'Job found')
     @api.response(401, 'Unauthorized request')
     @api.response(404, 'Job not found')
     @api.response(500, 'Error getting the job')
+    @admin_required
     def get(self, job_id):
         """
         API route to get the status of a job. The `job_id` parameter is the id of the job to get the status.
         """
-        gcp_args = gcp_parser.parse_args()
-        gcp_project = None
-        # check gcp params
-        try:
-            gcp_project = check_gcp_params_from_request(gcp_args)
-        except InternalException as e:
-            logger.error(f"Error checking gcp params: {e}")
-            return {
-                "error": e.message
-            }, 401
         # check first if the job is in the jobs dictionary
         if check_job(job_id):
-            get_job(job_id), 200
+            job = get_job(job_id)
+            return {'job': job}, 200
         else:
             return {'error': 'Job not found'}, 404
 

@@ -17,6 +17,14 @@ Python script for automating the creation of a nosql cluster on GCP.
 Built on Python: 3.10.8
 
 
+## Note 
+The REST API server module interacts with a couchbase database server in order to persist the following items:
+- Users registered to the platform
+- Parallel Jobs running in the background
+- Cluster creation/update payloads
+
+
+
 
 ## File Structure 
 ```

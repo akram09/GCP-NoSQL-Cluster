@@ -35,9 +35,9 @@ def update_job_status(job_id, status, message=None):
     # get the job from the database
     job = couchbase.get('jobs', job_id)
     # update the status of the job
-    jobs[job_id]['status'] = status
+    job['status'] = status
     if message:
-        jobs[job_id]['message'] = message
+        job['message'] = message
     # update the job in the database
     couchbase.update('jobs', job_id, job)
 

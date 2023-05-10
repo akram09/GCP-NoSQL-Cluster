@@ -2,8 +2,9 @@
 from functools import wraps
 from flask import request
 from utils.exceptions import UnAuthorizedException, InternalException
-from api.models.user import User
 from loguru import logger
+from api.models.user import User
+from api.extensions import couchbase
 
 
 
@@ -23,7 +24,7 @@ def admin_required(f):
         # check if the token is valid
         try:
             user = check_token(token)
-        except InternalException as e:
+        except Exception as e:
             logger.error(f"Error checking token: {e}")
             return {
                 "error": e.message
@@ -45,9 +46,9 @@ def check_token(token):
     role = user['role']
     user_id = user['id']
     # get the user from the database
-    user = User.query.filter_by(id=user_id).first()
-    # check if the user exists
-    if not user:
+    if not couchbase.check("users", user_id):
         raise UnAuthorizedException("Invalid token")
+    user_dict = couchbase.get("users", user_id)
+    user = User.from_dict(user_dict)
     return user
 

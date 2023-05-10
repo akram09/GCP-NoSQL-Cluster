@@ -8,9 +8,12 @@ import jwt
 import uuid
 
 class User():
-    def __init__(self, username, password, role="user"):
+    def __init__(self, username, password, role="user", id=None):
         # generate id 
-        self.id = str(uuid.uuid4())  
+        if id:
+            self.id = id
+        else:
+            self.id = str(uuid.uuid4())  
         self.username = username
         self.password = bcrypt.generate_password_hash(
             password, app.config.get('BCRYPT_LOG_ROUNDS')
@@ -23,9 +26,18 @@ class User():
             "id": self.id,
             "username": self.username,
             "password": self.password,
-            "registered_on": self.registered_on,
+            "registered_on": self.registered_on.isoformat(),
             "role": self.role
         }
+    
+    @staticmethod
+    def from_dict(user_dict):
+        return User(
+            user_dict["username"],
+            user_dict["password"],
+            user_dict["role"],
+            user_dict["id"]
+        )
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password, password)
