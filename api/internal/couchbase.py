@@ -147,7 +147,7 @@ class CouchbaseCluster():
         # execute query
         result = self.cluster.query(query, options)
         # return the result
-        return result.rows()
+        return list(result.rows())
 
     def list_filter(self, bucket, **kwargs):
         """

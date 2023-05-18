@@ -61,4 +61,6 @@ def get_job_list():
     """
     Get the list of the jobs from the database.
     """
-    return couchbase.list('jobs')
+    jobs_list = couchbase.list('jobs')
+    jobs_list = list(map(lambda jobs: jobs['jobs'], jobs_list))
+    return jobs_list

@@ -11,6 +11,7 @@ from api.routes.template import api as template_api
 from api.routes.managed_instance import api as managed_instance_api
 from api.routes.kms import api as kms_api
 from api.routes.storage import api as storage_api
+from api.routes.disks import api as disks_api
 from api.config import Config
 from api.extensions import  bcrypt, couchbase
 
@@ -35,6 +36,8 @@ api.add_namespace(managed_instance_api)
 api.add_namespace(kms_api)
 # add storage namespace to the api_blueprint
 api.add_namespace(storage_api)
+# add disks namespace to the api_blueprint
+api.add_namespace(disks_api)
 
 
 
